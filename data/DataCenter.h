@@ -16,6 +16,15 @@ class Floor;
 class Candle;
 class Closet;
 class Door;
+class Table;
+class TFloor;
+class THero;
+class Boss;
+class NorAttack;
+class RegionAttack;
+class BNorAttack;
+class BRegionAttack;
+class BShortAttack;
 
 //class Monster;
 //class Tower;
@@ -98,6 +107,15 @@ public:
 	Candle *candle;
 	Closet *closet;
 	Door *door;
+	Table *table;
+	TFloor* tfloor;
+	THero* thero;
+    Boss* boss;
+    std::vector<NorAttack*> nor_attacks;
+    std::vector<RegionAttack*> region_attacks;
+    std::vector<BNorAttack*> boss_nor_attacks;
+    std::vector<BRegionAttack*> boss_region_attacks;
+    std::vector<BShortAttack*> boss_short_attacks;
 	
 private:
 	DataCenter();

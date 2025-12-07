@@ -19,7 +19,7 @@ class Candle: public Object
         void draw();
         bool is_player_touching();
         bool candle_lighted(){return candle_light;}
-        void interact();
+        void interact(bool enabled = true);
         void reset_candle_light()  
         {
             candle_light=false;

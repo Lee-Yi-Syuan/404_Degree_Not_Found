@@ -1,6 +1,7 @@
 #include "UI.h"
 #include "Utils.h"
 #include "data/DataCenter.h"
+#include "character/Character.h"
 #include "data/ImageCenter.h"
 #include "data/FontCenter.h"
 #include <algorithm>
@@ -19,7 +20,9 @@ UI::init() {
 
 void
 UI::update() {
-
+    if (showing_result) {
+        interact_result_dialog();
+    }
 }
 
 void
@@ -79,7 +82,52 @@ UI::draw() {
         top_right_x, top_y_start + 2 * line_spacing,
         ALLEGRO_ALIGN_RIGHT, "Club Credits: %d", now_club_point);
 
+    // Draw result dialog on top if active
+    if (showing_result) {
+        draw_result_dialog();
+    }
+}
 
+void UI::show_result_dialog(std::string message) {
+    result_msg = message;
+    showing_result = true;
+}
+
+void UI::interact_result_dialog() {
+    DataCenter *DC = DataCenter::get_instance();
+    
+    // Stop player movement while dialog is open
+    DC->character->set_movability(false);
+
+    if ((DC->key_state[ALLEGRO_KEY_SPACE] && !DC->prev_key_state[ALLEGRO_KEY_SPACE]) ||
+        (DC->key_state[ALLEGRO_KEY_ESCAPE] && !DC->prev_key_state[ALLEGRO_KEY_ESCAPE]) ||
+        (DC->key_state[ALLEGRO_KEY_ENTER] && !DC->prev_key_state[ALLEGRO_KEY_ENTER])) {
+        showing_result = false;
+        DC->character->set_movability(true);
+    }
+}
+
+void UI::draw_result_dialog() {
+    DataCenter *DC = DataCenter::get_instance();
+    FontCenter *FC = FontCenter::get_instance();
+    
+    float cx = DC->window_width / 2;
+    float cy = DC->window_height / 2;
+    float box_w = 600;
+    float box_h = 200;
+    
+    al_draw_filled_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgba(0, 0, 0, 220));
+    al_draw_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgb(255, 215, 0), 4); // Gold border
+    
+    al_draw_text(
+        FC->courier_new[FontSize::LARGE], al_map_rgb(255, 255, 255),
+        cx, cy - 20,
+        ALLEGRO_ALIGN_CENTRE, result_msg.c_str());
+        
+    al_draw_text(
+        FC->courier_new[FontSize::MEDIUM], al_map_rgb(200, 200, 200),
+        cx, cy + 40,
+        ALLEGRO_ALIGN_CENTRE, "Press SPACE to continue");
 }
 
 
