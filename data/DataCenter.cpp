@@ -6,10 +6,11 @@
 #include "../object/candle.h"
 #include "../object/closet.h"
 #include "../object/door.h"
+#include "../object/table.h"
+#include "../TableWorld/T_Floor.h"
+#include "../TableWorld/T_Hero.h"
+#include "../TableWorld/Boss.h"
 #include "../Character/Character.h"
-//#include "../monsters/Monster.h"
-//#include "../towers/Tower.h"
-//#include "../towers/Bullet.h"
 
 // fixed settings
 namespace DataSetting {
@@ -37,6 +38,10 @@ DataCenter::DataCenter() {
 	candle = new Candle();
 	closet = new Closet();
 	door = new Door();
+	table = new Table();
+	tfloor = new TFloor();
+	thero = new THero();
+    boss = new Boss();
 }
 
 //這邊是DataCenter的解構子
@@ -48,6 +53,9 @@ DataCenter::~DataCenter() {
 	delete candle;
 	delete closet;
 	delete door;
+	delete table;
+	delete tfloor;
+	delete thero;
 	/*for(Monster *&m : monsters) {
 		delete m;
 	}*/
