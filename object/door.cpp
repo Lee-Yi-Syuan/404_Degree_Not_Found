@@ -7,6 +7,7 @@
 #include "../Character/Character.h"
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
+#include <allegro5/allegro_primitives.h>
 
 using namespace std;
 
@@ -61,9 +62,19 @@ void Door::draw() {
     if(showing_prompt)
     {
         FontCenter *FC = FontCenter::get_instance();
+        
+        // Draw dialog box
+        float cx = DC->window_width/2;
+        float cy = DC->window_height - 100;
+        float box_w = 800;
+        float box_h = 100;
+        
+        al_draw_filled_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgba(0, 0, 0, 200));
+        al_draw_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgb(255, 255, 255), 3);
+        
         al_draw_text(
             FC->courier_new[FontSize::LARGE], al_map_rgb(255, 255, 255),
-            DC->window_width/2-50, DC->window_height - 100,
+            cx, cy - 15,
             ALLEGRO_ALIGN_CENTRE, "Press E to get out of game.");
     }
 }
@@ -77,15 +88,16 @@ bool Door::is_player_touching() {
 }
 
 //處理門的互動邏輯
-void Door::interact() {
+void Door::interact(bool enabled) {
     
     DataCenter *DC = DataCenter::get_instance();
 
     // 若角色碰到互動箱
-    if (is_player_touching())
+    if (enabled && is_player_touching())
         state = DoorState::touched;
     else {
         state = DoorState::untouched;
+        showing_prompt = false;
     }
 
     // 若碰到且尚未進入門世界
@@ -97,7 +109,14 @@ void Door::interact() {
             DC->character->set_movability(!showing_prompt);
         }
         
-        // 按下E鍵時，離開遊戲
+        // 按下ESC鍵時，關閉提示視窗並恢復角色移動
+        if(showing_prompt && DC->key_state[ALLEGRO_KEY_ESCAPE] && !DC->prev_key_state[ALLEGRO_KEY_ESCAPE])
+        {
+            showing_prompt = false;
+            DC->character->set_movability(true);
+        }
+        
+        // 按下E鍵時，進入門世界
         if(showing_prompt&&DC->key_state[ALLEGRO_KEY_E] && !DC->prev_key_state[ALLEGRO_KEY_E])
         {
             door_world_loaded = true;

@@ -19,7 +19,7 @@ class Bed: public Object
         void draw();
         bool is_player_touching();
         bool bed_world(){return bed_world_loaded;}
-        void interact();
+        void interact(bool enabled = true);
         void reset_bed_world()  
         {
             bed_world_loaded=false;

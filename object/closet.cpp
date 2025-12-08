@@ -7,6 +7,7 @@
 #include "../Character/Character.h"
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
+#include <allegro5/allegro_primitives.h>
 
 using namespace std;
 
@@ -35,8 +36,8 @@ void Closet::init() {
     h=al_get_bitmap_height(img);
 
     //設定衣櫃的左上角(x,y)位置
-    x1=DC->floor->get_x1()+250;
-    y1=DC->floor->get_y1()-h+500;
+    x1=ww - w - 100;
+    y1=30;
 
     //設定衣櫃的碰撞箱
     shape.reset(new Rectangle{
@@ -61,10 +62,42 @@ void Closet::draw() {
     if(showing_prompt)
     {
         FontCenter *FC = FontCenter::get_instance();
+        
+        // Draw dialog box
+        float cx = DC->window_width/2;
+        float cy = DC->window_height - 100;
+        float box_w = 800;
+        float box_h = 100;
+        
+        al_draw_filled_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgba(0, 0, 0, 200));
+        al_draw_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgb(255, 255, 255), 3);
+        
         al_draw_text(
             FC->courier_new[FontSize::LARGE], al_map_rgb(255, 255, 255),
-            DC->window_width/2, DC->window_height - 100,
-            ALLEGRO_ALIGN_CENTRE, "Press E to open the closet_world.");
+            cx, cy - 15,
+            ALLEGRO_ALIGN_CENTRE, "Press E to open the closet.");
+    }
+
+    // Show Menu
+    if (showing_menu) {
+        FontCenter *FC = FontCenter::get_instance();
+        float cx = DC->window_width/2;
+        float cy = DC->window_height/2;
+        float box_w = 400;
+        float box_h = 300;
+        
+        al_draw_filled_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgba(0, 0, 0, 220));
+        al_draw_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgb(255, 255, 255), 3);
+        
+        std::string hat_str = "1. Hat " + std::string(DC->character->is_equipped(EquippedItem::Hat) ? "[x]" : "[ ]");
+        std::string clothes_str = "2. Clothes " + std::string(DC->character->is_equipped(EquippedItem::Clothes) ? "[x]" : "[ ]");
+        std::string glasses_str = "3. Sunglasses " + std::string(DC->character->is_equipped(EquippedItem::Sunglasses) ? "[x]" : "[ ]");
+
+        al_draw_text(FC->courier_new[FontSize::LARGE], al_map_rgb(255, 255, 255), cx, cy - 100, ALLEGRO_ALIGN_CENTRE, "Choose Items:");
+        al_draw_text(FC->courier_new[FontSize::MEDIUM], al_map_rgb(255, 255, 255), cx, cy - 40, ALLEGRO_ALIGN_CENTRE, hat_str.c_str());
+        al_draw_text(FC->courier_new[FontSize::MEDIUM], al_map_rgb(255, 255, 255), cx, cy + 0, ALLEGRO_ALIGN_CENTRE, clothes_str.c_str());
+        al_draw_text(FC->courier_new[FontSize::MEDIUM], al_map_rgb(255, 255, 255), cx, cy + 40, ALLEGRO_ALIGN_CENTRE, glasses_str.c_str());
+        al_draw_text(FC->courier_new[FontSize::MEDIUM], al_map_rgb(200, 200, 200), cx, cy + 100, ALLEGRO_ALIGN_CENTRE, "Press ESC to close");
     }
 }
 
@@ -77,19 +110,41 @@ bool Closet::is_player_touching() {
 }
 
 //處理衣櫃的互動邏輯
-void Closet::interact() {
+void Closet::interact(bool enabled) {
     
     DataCenter *DC = DataCenter::get_instance();
 
-    // 是否接觸到衣櫃
-    if (is_player_touching())
+    // If menu is open, handle menu input
+    if (showing_menu) {
+        DC->character->set_movability(false);
+        
+        if (DC->key_state[ALLEGRO_KEY_ESCAPE] && !DC->prev_key_state[ALLEGRO_KEY_ESCAPE]) {
+            showing_menu = false;
+            DC->character->set_movability(true);
+        }
+        
+        if (DC->key_state[ALLEGRO_KEY_1] && !DC->prev_key_state[ALLEGRO_KEY_1]) {
+            DC->character->toggle_equipped_item(EquippedItem::Hat);
+        }
+        if (DC->key_state[ALLEGRO_KEY_2] && !DC->prev_key_state[ALLEGRO_KEY_2]) {
+            DC->character->toggle_equipped_item(EquippedItem::Clothes);
+        }
+        if (DC->key_state[ALLEGRO_KEY_3] && !DC->prev_key_state[ALLEGRO_KEY_3]) {
+            DC->character->toggle_equipped_item(EquippedItem::Sunglasses);
+        }
+        return;
+    }
+
+    // 若角色碰到互動箱
+    if (enabled && is_player_touching())
         state = ClosetState::touched;
     else {
         state = ClosetState::untouched;
+        showing_prompt = false;
     }
 
     // 若碰到且尚未進入衣櫃世界
-    if(state==ClosetState::touched && !closet_world_loaded)
+    if(state==ClosetState::touched)
     {
         // 按下空白鍵時，顯示或關閉提示視窗並鎖定角色移動
         if(DC->key_state[ALLEGRO_KEY_SPACE] && !DC->prev_key_state[ALLEGRO_KEY_SPACE])
@@ -97,13 +152,19 @@ void Closet::interact() {
             showing_prompt = !showing_prompt;
             DC->character->set_movability(!showing_prompt);
         }
+        
+        // 按下ESC鍵時，關閉提示視窗並恢復角色移動
+        if(showing_prompt && DC->key_state[ALLEGRO_KEY_ESCAPE] && !DC->prev_key_state[ALLEGRO_KEY_ESCAPE])
+        {
+            showing_prompt = false;
+            DC->character->set_movability(true);
+        }
+
         // 按下E鍵時，進入衣櫃世界
         if(showing_prompt&&DC->key_state[ALLEGRO_KEY_E] && !DC->prev_key_state[ALLEGRO_KEY_E])
         {
-            // 開啟衣櫃世界
-            closet_world_loaded= true;
             showing_prompt = false;
-            DC->character->set_movability(true);
+            showing_menu = true;
         }
         
     }

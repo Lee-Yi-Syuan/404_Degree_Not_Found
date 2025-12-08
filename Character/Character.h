@@ -8,6 +8,13 @@
 #include <queue>
 #include <map>
 
+enum class EquippedItem {
+    None,
+    Hat,
+    Clothes,
+    Sunglasses
+};
+
 // fixed settings
 enum class CharacterState {
 	LEFT, RIGHT, Front, Back,CharacterState_MAX
@@ -24,8 +31,13 @@ class Character : public Object
 		void update();
 		void draw() override;
 		void set_movability(bool movable){this->movable=movable;}
+        void toggle_equipped_item(EquippedItem item);
+        bool is_equipped(EquippedItem item) const;
 	private:
 		CharacterState state=CharacterState::Front;
+        bool has_hat = false;
+        bool has_clothes = false;
+        bool has_sunglasses = false;
 
 		//移動速度
 		double speed=5;

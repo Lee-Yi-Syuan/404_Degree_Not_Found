@@ -6,6 +6,7 @@
 #include "../Character/Character.h"
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
+#include <allegro5/allegro_primitives.h>
 
 using namespace std;
 
@@ -31,10 +32,16 @@ void Bed::init() {
     //設定床的位置
     int wh=DC->window_height;
     int ww=DC->window_width;
-    w=al_get_bitmap_width(img);
-    h=al_get_bitmap_height(img);
-    x1=ww - w - 100;
-    y1=wh - h;
+    
+    // 旋轉後的寬高 (原本的寬變成高，高變成寬)
+    int original_w = al_get_bitmap_width(img);
+    int original_h = al_get_bitmap_height(img);
+    w = original_h;
+    h = original_w;
+    
+    // 設定位置在左下角 (Floor left: 190, Floor bottom: wh - 10)
+    x1 = 190;
+    y1 = (wh - 10) - h;
 
     //設定床的碰撞箱
     shape.reset(new Rectangle{
@@ -45,26 +52,48 @@ void Bed::init() {
     //設定床的互動箱
     trigger_shape.reset(new Rectangle{
         x1-50,y1-50,
-        x1 + w,
-        y1 + h});
+        x1 + w+50,
+        y1 + h+50});
 }
 
 void Bed::draw() {
     ImageCenter *IC = ImageCenter::get_instance();
     ALLEGRO_BITMAP *img = IC->get(imgPath[state]);
     DataCenter *DC = DataCenter::get_instance();
-    al_draw_bitmap(img,shape->center_x()-(w/2),shape->center_y()-(h/2) ,0);
+    
+    // 繪製旋轉後的圖片
+    float cx = al_get_bitmap_width(img) / 2.0f;
+    float cy = al_get_bitmap_height(img) / 2.0f;
+    
+    // 逆時針旋轉 90 度 (-PI/2)
+    al_draw_rotated_bitmap(img, cx, cy, 
+        shape->center_x(), shape->center_y(), 
+        -ALLEGRO_PI / 2, 0);
 
     //如果處於要顯示對話框的狀態
     if(showing_prompt)
     {
         FontCenter *FC = FontCenter::get_instance();
+        
+        // Draw dialog box
+        float cx = DC->window_width/2;
+        float cy = DC->window_height - 100;
+        float box_w = 800;
+        float box_h = 100;
+        
+        al_draw_filled_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgba(0, 0, 0, 200));
+        al_draw_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgb(255, 255, 255), 3);
+        
         al_draw_text(
             FC->courier_new[FontSize::LARGE], al_map_rgb(255, 255, 255),
-            DC->window_width/2-50, DC->window_height - 100,
+            cx, cy - 15,
             ALLEGRO_ALIGN_CENTRE, "Press E to get into the bed world.");
     }
+
+
 }
+
+
 
 //回傳角色是否碰到互動箱
 bool Bed::is_player_touching() {
@@ -75,15 +104,16 @@ bool Bed::is_player_touching() {
 }
 
 //處理床的互動邏輯
-void Bed::interact() {
+void Bed::interact(bool enabled) {
     
     DataCenter *DC = DataCenter::get_instance();
 
     // 若角色碰到互動箱
-    if (is_player_touching())
+    if (enabled && is_player_touching())
         state = BedState::touched;
     else {
         state = BedState::untouched;
+        showing_prompt = false;
     }
 
     // 若碰到且尚未進入床世界
@@ -94,6 +124,13 @@ void Bed::interact() {
         {
             showing_prompt = !showing_prompt;
             DC->character->set_movability(!showing_prompt);
+        }
+        
+        // 按下ESC鍵時，關閉提示視窗並恢復角色移動
+        if(showing_prompt && DC->key_state[ALLEGRO_KEY_ESCAPE] && !DC->prev_key_state[ALLEGRO_KEY_ESCAPE])
+        {
+            showing_prompt = false;
+            DC->character->set_movability(true);
         }
         
         // 按下E鍵時，進入床世界

@@ -18,11 +18,10 @@ class Closet: public Object
         void init();
         void draw();
         bool is_player_touching();
-        bool closet_world(){return closet_world_loaded;}
-        void interact();
+        void interact(bool enabled = true);
         void reset_closet_world()  
         {
-            closet_world_loaded=false;
+            showing_menu=false;
         }
     private:
         //衣櫃的左上角(x,y)座標
@@ -30,7 +29,7 @@ class Closet: public Object
         //衣櫃的寬高
         int w,h;
         bool showing_prompt = false;
-        bool closet_world_loaded= false;
+        bool showing_menu = false;
         std::unique_ptr<Rectangle> trigger_shape;
         ClosetState state=ClosetState::untouched;
         std::map<ClosetState ,std::string> imgPath;

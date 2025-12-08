@@ -12,12 +12,16 @@
 #include "object/closet.h"
 #include "object/door.h"
 #include "object/floor.h"
+#include "object/table.h"
+#include "TableWorld/T_Floor.h"
+#include "TableWorld/T_Hero.h"
+#include "TableWorld/Boss.h"
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_acodec.h>
-#include <algorithm> // 新增 有用到max
+#include <algorithm> // 新加的，因為有用到max
 #include <vector>
 #include <cstring>
 
@@ -148,6 +152,14 @@ Game::game_init() {
     start_screen = new StartScreen();
     start_screen->init();
 
+    // init table world screen
+    table_world_screen = new TWorldScreen();
+    table_world_screen->init();
+    
+    // init door world screen
+    door_world_screen = new DWorld();
+    door_world_screen->init();
+
     // 初始化 end screen
     end_screen = new EndScreen();
     end_screen->init();
@@ -155,10 +167,14 @@ Game::game_init() {
     //object init
     DC->character->init();
     DC->floor->init(190, 10,DC->window_width - 150, DC->window_height - 10);
+    DC->table->init();
     DC->bed->init();
     DC->candle->init();
     DC->closet->init();
     DC->door->init();
+    DC->tfloor->init();
+    DC->thero->init();
+    DC->boss->init();
     // game start
     background = IC->get(background_img_path);
     debug_log("Game state: change to START\n");
@@ -194,8 +210,8 @@ Game::game_update() {
         } case STATE::Main: {
             static bool BGM_played = false;
             if(!BGM_played) {
-                background = SC->play(background_sound_path, ALLEGRO_PLAYMODE_LOOP);
-                BGM_played = true;
+                //background = SC->play(background_sound_path, ALLEGRO_PLAYMODE_LOOP);
+                //BGM_played = true;
             }
 
             if(DC->key_state[ALLEGRO_KEY_P] && !DC->prev_key_state[ALLEGRO_KEY_P]) {
@@ -203,6 +219,12 @@ Game::game_update() {
                 debug_log("<Game> state: change to PAUSE\n");
                 state = STATE::PAUSE;
             }
+
+            DC->player->update();
+            SC->update();
+            ui->update();
+            DC->character->update();
+            OC->update();
 
             
             // 結局判斷
@@ -254,22 +276,31 @@ Game::game_update() {
             {
                 // 隨機選擇要增加的學分
                 int credit_type = rand() % 3; // 0, 1, or 2
+                int gained = 20;
+                std::string type_str;
 
                 switch (credit_type) {
                     case 0:
-                        DC->player->now_love_point += 20;
-                        debug_log("<Game> Bed effect: Love Credits +20. New total: %d\n", DC->player->now_love_point);
+                        DC->player->now_love_point += gained;
+                        type_str = "Love";
+                        debug_log("<Game> Bed effect: Love +20. Love credits currently total: %d\n", DC->player->now_love_point);
                         break;
                     case 1:
-                        DC->player->now_study_point += 20;
-                        debug_log("<Game> Bed effect: Study Credits +20. New total: %d\n", DC->player->now_study_point);
+                        DC->player->now_study_point += gained;
+                        type_str = "Study";
+                        debug_log("<Game> Bed effect: Study +20. Study credits currently total : %d\n", DC->player->now_study_point);
                         break;
                     case 2:
-                        DC->player->now_club_point += 20;
-                        debug_log("<Game> Bed effect: Club Credits +20. New total: %d\n", DC->player->now_club_point);
+                        DC->player->now_club_point += gained;
+                        type_str = "Club";
+                        debug_log("<Game> Bed effect: Club +20. Club credits currently total: %d\n", DC->player->now_club_point);
                         break;
                 }
                 
+                // 顯示結果對話框
+                std::string msg = "You gained " + std::to_string(gained) + " " + type_str + " Credit!";
+                ui->show_result_dialog(msg);
+
                 // 隨後回到主畫面 (不切換 Game State)
                 DC->bed->reset_bed_world();
 
@@ -282,19 +313,92 @@ Game::game_update() {
                 
             }
 
-            if(DC->closet->closet_world())
+
+            if(DC->table->table_world())
             {
-                // 回到初始畫面
-                debug_log("<Game> state: change to START\n");
-                state = STATE::START;
-                start_screen->reset();
+                state= STATE::Table_world;
+                table_world_screen->start_level();
+                debug_log("<Game> state: change to Table_world\n");
             }
             if(DC->door->door_world())
             {
-                // 點擊門口時，如果遊戲未結束，則不執行任何操作。
+                // 點擊門口時，進入 DoorWorld
+                state = STATE::Door_world;
+                door_world_screen->start_level();
+                debug_log("<Game> state: change to Door_world\n");
+            }
+            break;   
+        } case STATE::Table_world: {
+            //進入桌子遊戲
+            TFloor* tfloor=DC->tfloor;
+            // int type=table_world_screen->get_current_TWorld_type();
+            // tfloor->load_map(type); // Moved to start_level()
+            table_world_screen->update();
+            
+            if(table_world_screen->is_return_to_main()) {
+                bool win = table_world_screen->is_victory();
+                table_world_screen->reset_return_to_main();
+                DC->table->reset_table_world();
+                debug_log("<Game> state: change to Main\n");
+                state = STATE::Main;
+                
+                if (win) {
+                    // Add Study credits
+                    int gained = 20;
+                    DC->player->now_study_point += gained;
+                    DC->player->now_point = DC->player->now_love_point + 
+                                            DC->player->now_study_point + 
+                                            DC->player->now_club_point;
+                    
+                    ui->show_result_dialog("You gained " + std::to_string(gained) + " Study credits!");
+                } else {
+                    // Failed
+                    int remaining = 3 - DC->player->now_fail;
+                    if (remaining < 0) remaining = 0;
+                    ui->show_result_dialog("You failed! Remaining chances: " + std::to_string(remaining));
+                }
+                
+                // Reset Boss and Hero?
+                DC->boss->init();
+                DC->thero->init();
+                // Clear attacks
+                DC->nor_attacks.clear();
+                DC->region_attacks.clear();
+                DC->boss_nor_attacks.clear();
+                DC->boss_region_attacks.clear();
+                DC->boss_short_attacks.clear();
+            }
+            
+            break;
+         } case STATE::Door_world: {
+            door_world_screen->update();
+            
+            if(door_world_screen->is_return_to_main()) {
+                bool win = door_world_screen->is_victory();
+                door_world_screen->reset_return_to_main();
+                DC->door->reset_door_world(); // Assuming this exists or needs to be added
+                debug_log("<Game> state: change to Main\n");
+                state = STATE::Main;
+
+                if (win) {
+                    // Add Club credits
+                    int gained = 20;
+                    DC->player->now_club_point += gained;
+                    DC->player->now_point = DC->player->now_love_point + 
+                                            DC->player->now_study_point + 
+                                            DC->player->now_club_point;
+                    
+                    ui->show_result_dialog("You gained " + std::to_string(gained) + " Club credits!");
+                } else {
+                    // Failed
+                    DC->player->now_fail++;
+                    int remaining = 3 - DC->player->now_fail;
+                    if (remaining < 0) remaining = 0;
+                    ui->show_result_dialog("You failed! Remaining chances: " + std::to_string(remaining));
+                }
             }
             break;
-        } case STATE::PAUSE: {
+         } case STATE::PAUSE: {
             if(DC->key_state[ALLEGRO_KEY_P] && !DC->prev_key_state[ALLEGRO_KEY_P]) {
                 SC->toggle_playing(background);
                 debug_log("<Game> state: change to Main\n");
@@ -320,12 +424,7 @@ Game::game_update() {
     }
     // If the game is not paused, we should progress update.
     if(state != STATE::PAUSE) {
-        DC->player->update();
-        SC->update();
-        ui->update();
         if(state != STATE::START) {
-            DC->character->update();
-            OC->update();
         }
     }
     // game_update is finished. The states of current frame will be previous states of the next frame.
@@ -351,25 +450,9 @@ Game::game_draw() {
     if(state != STATE::END) {
         // background
         al_draw_bitmap(background, 0, 0, 0);
-        /*if(DC->game_field_length < DC->window_width)
-            al_draw_filled_rectangle(
-                DC->game_field_length, 0,
-                DC->window_width, DC->window_height,
-                al_map_rgb(100, 100, 100));
-        if(DC->game_field_length < DC->window_height)
-            al_draw_filled_rectangle(
-                0, DC->game_field_length,
-                DC->window_width, DC->window_height,
-                al_map_rgb(100, 100, 100));*/
         // user interface
         if(state != STATE::START) {
-            DC->character->draw();
-            DC->bed->draw();
-            DC->candle->draw();
-            DC->closet->draw();
-            DC->door->draw();
-            ui->draw();
-            OC->draw();
+            
         }
     }
     switch(state) {
@@ -378,10 +461,24 @@ Game::game_draw() {
                 start_screen->draw();
             break;
         } case STATE::Main: {
+            DC->bed->draw();
+            DC->closet->draw();
+            DC->door->draw();
+            DC->table->draw();
+            DC->candle->draw();
+            DC->character->draw();
             if(!DC->candle->candle_lighted())
-                al_draw_filled_rectangle(0, 0, DC->window_width, DC->window_height, al_map_rgba(0, 0, 0, 180));
+                al_draw_filled_rectangle(0, 0, DC->window_width, DC->window_height, al_map_rgba(0, 0, 0, 180));\
+            ui->draw();
+            OC->draw();
             break;
-        } case STATE::PAUSE: {
+        } case STATE::Table_world: {
+            table_world_screen->draw();
+            break;
+         } case STATE::Door_world: {
+            door_world_screen->draw();
+            break;
+         } case STATE::PAUSE: {
             // game layout cover
             al_draw_filled_rectangle(0, 0, DC->window_width, DC->window_height, al_map_rgba(50, 50, 50, 64));
             al_draw_text(

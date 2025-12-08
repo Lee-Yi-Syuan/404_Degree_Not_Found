@@ -4,18 +4,63 @@
 #include "../object/candle.h"
 #include "../object/closet.h"
 #include "../object/door.h"
+#include "../object/table.h"
+#include "../Character/Character.h"
 //#include "../monsters/Monster.h"
 //#include "../towers/Tower.h"
 //#include "../towers/Bullet.h"
 #include "../Player.h"
 
 
+// Helper function for distance squared
+static double get_dist_sq(Shape* s1, Shape* s2) {
+    if (!s1 || !s2) return 1e18;
+    double dx = s1->center_x() - s2->center_x();
+    double dy = s1->center_y() - s2->center_y();
+    return dx*dx + dy*dy;
+}
+
 //這邊主要用來統一更新遊戲內物件互動的function
 void OperationCenter::update() {
-	_update_character_bed();
-	_update_candle_character();
-	_update_closet_character();
-	_update_door_character();
+	DataCenter *DC = DataCenter::get_instance();
+    
+    bool bed_touch = DC->bed->is_player_touching();
+    bool candle_touch = DC->candle->is_player_touching();
+    bool closet_touch = DC->closet->is_player_touching();
+    bool door_touch = DC->door->is_player_touching();
+    bool table_touch = DC->table->is_player_touching();
+    
+    double min_dist = 1e18;
+    int active_id = 0; // 0: None, 1: Bed, 2: Candle, 3: Closet, 4: Door, 5: Table
+    
+    Shape* char_shape = DC->character->shape.get();
+
+    if (bed_touch) {
+        double d = get_dist_sq(char_shape, DC->bed->shape.get());
+        if (d < min_dist) { min_dist = d; active_id = 1; }
+    }
+    if (candle_touch) {
+        double d = get_dist_sq(char_shape, DC->candle->shape.get());
+        if (d < min_dist) { min_dist = d; active_id = 2; }
+    }
+    if (closet_touch) {
+        double d = get_dist_sq(char_shape, DC->closet->shape.get());
+        if (d < min_dist) { min_dist = d; active_id = 3; }
+    }
+    if (door_touch) {
+        double d = get_dist_sq(char_shape, DC->door->shape.get());
+        if (d < min_dist) { min_dist = d; active_id = 4; }
+    }
+    if (table_touch) {
+        double d = get_dist_sq(char_shape, DC->table->shape.get());
+        if (d < min_dist) { min_dist = d; active_id = 5; }
+    }
+
+	_update_character_bed(active_id == 1);
+	_update_candle_character(active_id == 2);
+	_update_closet_character(active_id == 3);
+	_update_door_character(active_id == 4);
+	_update_table_character(active_id == 5);
 	// Update monsters.
 	//_update_monster();
 	// Update towers.
@@ -27,25 +72,30 @@ void OperationCenter::update() {
 	// If any monster reaches the end, hurt the player and delete the monster.
 	//_update_monster_player();
 }
-void OperationCenter::_update_character_bed() {
+void OperationCenter::_update_character_bed(bool enabled) {
 	DataCenter *DC = DataCenter::get_instance();
 	Bed* bed=DC->bed;
-	bed->interact();
+	bed->interact(enabled);
 }
-void OperationCenter::_update_candle_character() {
+void OperationCenter::_update_candle_character(bool enabled) {
 	DataCenter *DC = DataCenter::get_instance();
 	Candle* candle=DC->candle;
-	candle->interact();
+	candle->interact(enabled);
 }
-void OperationCenter::_update_closet_character() {
+void OperationCenter::_update_closet_character(bool enabled) {
 	DataCenter *DC = DataCenter::get_instance();
 	Closet* closet=DC->closet;
-	closet->interact();
+	closet->interact(enabled);
 }
-void OperationCenter::_update_door_character() {
+void OperationCenter::_update_door_character(bool enabled) {
 	DataCenter *DC = DataCenter::get_instance();
 	Door* door=DC->door;
-	door->interact();
+	door->interact(enabled);
+}
+void OperationCenter::_update_table_character(bool enabled) {
+	DataCenter *DC = DataCenter::get_instance();
+	Table* table=DC->table;
+	table->interact(enabled);
 }
 /*void OperationCenter::_update_monster() {
 	std::vector<Monster*> &monsters = DataCenter::get_instance()->monsters;

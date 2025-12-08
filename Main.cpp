@@ -2,8 +2,11 @@
 #include "Game.h"
 #include <iostream>
 #include <string>
+#include <ctime>
+#include <cstdlib>
 
 int real_main(int argc, char **argv) {
+	srand(time(NULL));
 	bool testMode = false;
 	if(argc > 1) {
 		if(std::string(argv[1]) == "--test") {
