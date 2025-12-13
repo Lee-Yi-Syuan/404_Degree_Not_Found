@@ -130,42 +130,56 @@ void DWorld::draw_ui() {
     DataCenter *DC = DataCenter::get_instance();
     FontCenter *FC = FontCenter::get_instance();
     ALLEGRO_FONT *font = FC->caviar_dreams[FontSize::MEDIUM];
-    
-    al_draw_textf(font, al_map_rgb(0, 0, 0), 10, 10, 0, "Happiness: %d  /300", score);
 
+    // 分數顯示
+    al_draw_textf(font, al_map_rgb(0, 0, 0), 10, 10, 0, "Happiness: %d /300", score);
+
+    // 生命顯示
     float base_x = 20;
     float base_y = DC->window_height - 60;
     for(int i=0; i<dhero.hearts; i++) {
         al_draw_filled_rectangle(base_x + i*40, base_y, base_x + i*40 + 30, base_y + 30, al_map_rgb(255, 0, 0));
     }
 
-    float icon_x = DC->window_width - 80;
-    float icon_y = 10;
-    float gap = 50;
-    
-    auto draw_skill_status = [&](const char* label, Skill& skill, int index) {
-        float y = icon_y + index * gap;
-        al_draw_rectangle(icon_x, y, icon_x + 100, y + 40, al_map_rgb(0, 0, 0), 2);
-        
-        char status_text[20];
-        if (skill.on_cooldown) {
-            sprintf(status_text, "%.1fs", skill.cooldown);
-        } else {
-            sprintf(status_text, "Ready");
-        }
-        
-        al_draw_text(font, al_map_rgb(0, 0, 0), icon_x - 30, y + 10, 0, label);
-        al_draw_text(font, al_map_rgb(0, 0, 0), icon_x + 10, y + 10, 0, status_text);
-        
-        if(skill.active) {
-            al_draw_rectangle(icon_x-2, y-2, icon_x + 102, y + 42, al_map_rgb(0, 255, 0), 3);
-        }
+    // 技能區
+    float icon_x = DC->window_width - 150; // 技能區 x 座標
+    float icon_y = 10;                     // y 起點
+    float gap = 60;                        // 技能間隔
+
+    struct SkillInfo {
+        const char* label;
+        Skill& skill;
+    };
+    SkillInfo skills[] = {
+        {"A (Heal)", dhero.heal},
+        {"S (Shield)", dhero.shield},
+        {"D (Speed)", dhero.speedup}
     };
 
-    draw_skill_status("A (Heal                                             ", dhero.heal, 0);
-    draw_skill_status("S (Shield)                                             ", dhero.shield, 1);
-    draw_skill_status("D (Speed)                                             ", dhero.speedup, 2);
+    for(int i=0; i<3; i++) {
+        float y = icon_y + i*gap;
+
+        // 技能外框
+        al_draw_rectangle(icon_x, y, icon_x + 120, y + 50, al_map_rgb(0, 0, 0), 2);
+
+        // 技能名稱（第一行）
+        al_draw_text(font, al_map_rgb(0,0,0), icon_x + 5, y + 5, 0, skills[i].label);
+
+        // 冷卻時間（第二行）
+        char status_text[20];
+        if(skills[i].skill.on_cooldown)
+            sprintf(status_text, "%.1fs", skills[i].skill.cooldown);
+        else
+            sprintf(status_text, "Ready");
+        al_draw_text(font, al_map_rgb(0,0,0), icon_x + 5, y + 25, 0, status_text);
+
+        // 高亮框
+        if(skills[i].skill.active) {
+            al_draw_rectangle(icon_x-2, y-2, icon_x + 122, y + 52, al_map_rgb(0,255,0), 3);
+        }
+    }
 }
+
 
 void DWorld::draw() {
     DataCenter *DC = DataCenter::get_instance();
