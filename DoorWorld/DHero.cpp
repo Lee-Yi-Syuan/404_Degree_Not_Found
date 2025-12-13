@@ -30,6 +30,7 @@ void DHero::update() {
     DataCenter *DC = DataCenter::get_instance();
     float delta_time = 1.0 / 60.0; 
 
+    // ... (技能冷卻邏輯保持不變) ...
     // 技能冷卻
     if (heal.on_cooldown) {
         heal.cooldown -= delta_time;
@@ -56,14 +57,18 @@ void DHero::update() {
     }
 
     // 鍵盤觸發技能
-    if (DC->key_state[ALLEGRO_KEY_J] && !DC->prev_key_state[ALLEGRO_KEY_J]) {
+    // 原來的 J/K/L 技能鍵改成 A/S/D
+    
+    // 技能 A: 治療 (原本是 J)
+    if (DC->key_state[ALLEGRO_KEY_A] && !DC->prev_key_state[ALLEGRO_KEY_A]) {
         if (!heal.on_cooldown) {
             hearts++; 
             heal.on_cooldown = true;
             heal.cooldown = 15.0; 
         }
     }
-    if (DC->key_state[ALLEGRO_KEY_K] && !DC->prev_key_state[ALLEGRO_KEY_K]) {
+    // 技能 S: 護盾 (原本是 K)
+    if (DC->key_state[ALLEGRO_KEY_S] && !DC->prev_key_state[ALLEGRO_KEY_S]) {
         if (!shield.on_cooldown) {
             shield.active = true;
             shield.duration = 3.0;
@@ -71,7 +76,8 @@ void DHero::update() {
             shield.cooldown = 10.0;
         }
     }
-    if (DC->key_state[ALLEGRO_KEY_L] && !DC->prev_key_state[ALLEGRO_KEY_L]) {
+    // 技能 D: 加速 (原本是 L)
+    if (DC->key_state[ALLEGRO_KEY_D] && !DC->prev_key_state[ALLEGRO_KEY_D]) {
         if (!speedup.on_cooldown) {
             speedup.active = true;
             speed = boost_speed;
@@ -82,15 +88,17 @@ void DHero::update() {
     }
 
     // 移動控制
+    // 原來的 W/A/S/D 移動鍵改成 上/下/左/右 方向鍵
     double dx = 0, dy = 0;
-    if (DC->key_state[ALLEGRO_KEY_W]) dy -= speed;
-    if (DC->key_state[ALLEGRO_KEY_S]) dy += speed;
-    if (DC->key_state[ALLEGRO_KEY_A]) dx -= speed;
-    if (DC->key_state[ALLEGRO_KEY_D]) dx += speed;
+    if (DC->key_state[ALLEGRO_KEY_UP]) dy -= speed;
+    if (DC->key_state[ALLEGRO_KEY_DOWN]) dy += speed;
+    if (DC->key_state[ALLEGRO_KEY_LEFT]) dx -= speed;
+    if (DC->key_state[ALLEGRO_KEY_RIGHT]) dx += speed;
 
     double new_x = shape->center_x() + dx;
     double new_y = shape->center_y() + dy;
     
+    // ... (邊界檢查邏輯保持不變) ...
     // 邊界檢查
     double w = shape->x2 - shape->x1;
     double h = shape->y2 - shape->y1;

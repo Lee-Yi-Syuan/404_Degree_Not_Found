@@ -162,9 +162,9 @@ void DWorld::draw_ui() {
         }
     };
 
-    draw_skill_status("J (Heal)         ", dhero.heal, 0);
-    draw_skill_status("K (Shield)        ", dhero.shield, 1);
-    draw_skill_status("L (Speed)        ", dhero.speedup, 2);
+    draw_skill_status("A (Heal                                             ", dhero.heal, 0);
+    draw_skill_status("S (Shield)                                             ", dhero.shield, 1);
+    draw_skill_status("D (Speed)                                             ", dhero.speedup, 2);
 }
 
 void DWorld::draw() {

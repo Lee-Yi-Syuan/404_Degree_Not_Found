@@ -210,8 +210,8 @@ Game::game_update() {
         } case STATE::Main: {
             static bool BGM_played = false;
             if(!BGM_played) {
-                //background = SC->play(background_sound_path, ALLEGRO_PLAYMODE_LOOP);
-                //BGM_played = true;
+                background = SC->play(background_sound_path, ALLEGRO_PLAYMODE_LOOP);
+                BGM_played = true;
             }
 
             if(DC->key_state[ALLEGRO_KEY_P] && !DC->prev_key_state[ALLEGRO_KEY_P]) {
@@ -331,8 +331,8 @@ Game::game_update() {
         } case STATE::Table_world: {
             //進入桌子遊戲
             TFloor* tfloor=DC->tfloor;
-            // int type=table_world_screen->get_current_TWorld_type();
-            // tfloor->load_map(type); // Moved to start_level()
+            int type=table_world_screen->get_current_TWorld_type();
+            tfloor->load_map(type); // Moved to start_level()
             table_world_screen->update();
             
             if(table_world_screen->is_return_to_main()) {
