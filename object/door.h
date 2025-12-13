@@ -19,7 +19,7 @@ class Door: public Object
         void draw();
         bool is_player_touching();
         bool door_world(){return door_world_loaded;}
-        void interact();
+        void interact(bool enabled = true);
         void reset_door_world()  
         {
             door_world_loaded=false;

@@ -4,6 +4,8 @@
 #include <allegro5/allegro.h>
 #include "UI.h"
 #include "scene/Start.h"
+#include "scene/TableWorld.h"
+#include "scene/DoorWorld.h" // Added
 #include "scene/End.h" // 新加的
 
 /**
@@ -28,6 +30,8 @@ private:
     enum class STATE {
         START, // -> Main
         Main,  // -> START, PAUSE, END
+        Table_world,
+        Door_world, // Added
         PAUSE, // -> Main
         END    // -> START
     };
@@ -41,6 +45,8 @@ private:
     ALLEGRO_EVENT_QUEUE *event_queue;
     UI *ui;
     StartScreen* start_screen;
+    TWorldScreen* table_world_screen;
+    DWorld* door_world_screen; // Added
     EndScreen* end_screen; //結局
 };
 

@@ -1,6 +1,7 @@
 #include "Character.h"
 #include "../object/bed.h"
 #include "../object/closet.h"
+#include "../object/table.h"
 #include "../object/floor.h"
 #include "../data/DataCenter.h"
 #include "../data/GIFCenter.h"
@@ -60,23 +61,23 @@ void Character::update()
 	float dx=0, dy=0;
 
 	//鍵盤控制
-	if(DC->key_state[ALLEGRO_KEY_A])
+	if(DC->key_state[ALLEGRO_KEY_LEFT])
 	{
 		state=CharacterState::LEFT;
 		dx=-speed;
 		
 	}
-	if(DC->key_state[ALLEGRO_KEY_D])
+	if(DC->key_state[ALLEGRO_KEY_RIGHT])
 	{
 		state=CharacterState::RIGHT;
 		dx=speed;
 	}
-	if(DC->key_state[ALLEGRO_KEY_W])
+	if(DC->key_state[ALLEGRO_KEY_UP])
 	{
 		state=CharacterState::Back;
 		dy=-speed;
 	}
-	if(DC->key_state[ALLEGRO_KEY_S])
+	if(DC->key_state[ALLEGRO_KEY_DOWN])
 	{
 		state=CharacterState::Front;
 		dy=speed;
@@ -121,6 +122,13 @@ void Character::update()
 		shape->update_center_x(old_x);
 		shape->update_center_y(old_y);
 	}
+
+	if(shape->overlap(*(DC->table->shape)))
+	{
+		//若是，移回原位置
+		shape->update_center_x(old_x);
+		shape->update_center_y(old_y);
+	}
 	
 	
 }
@@ -131,4 +139,49 @@ void Character::draw()
 	algif_draw_gif(gif,
 				   shape->center_x()-w/2,
 				   shape->center_y()-h/2,0);
+
+    // Draw equipped item
+    float cx = shape->center_x();
+    float cy = shape->center_y();
+    float top = cy - h/2;
+    
+    if (has_hat) {
+        // Draw a red hat
+        al_draw_filled_triangle(cx - 15, top + 10, cx + 15, top + 10, cx, top - 15, al_map_rgb(255, 0, 0));
+    }
+    if (has_clothes) {
+        // Draw a blue shirt (simple rectangle over body)
+        al_draw_filled_rectangle(cx - 15, top + 30, cx + 15, top + 60, al_map_rgb(0, 0, 255));
+    }
+    if (has_sunglasses) {
+        // Draw black sunglasses
+        al_draw_filled_circle(cx - 5, top + 15, 4, al_map_rgb(0, 0, 0));
+        al_draw_filled_circle(cx + 5, top + 15, 4, al_map_rgb(0, 0, 0));
+        al_draw_line(cx - 5, top + 15, cx + 5, top + 15, al_map_rgb(0, 0, 0), 2);
+    }
+}
+
+void Character::toggle_equipped_item(EquippedItem item) {
+    switch(item) {
+        case EquippedItem::Hat:
+            has_hat = !has_hat;
+            break;
+        case EquippedItem::Clothes:
+            has_clothes = !has_clothes;
+            break;
+        case EquippedItem::Sunglasses:
+            has_sunglasses = !has_sunglasses;
+            break;
+        case EquippedItem::None:
+            break;
+    }
+}
+
+bool Character::is_equipped(EquippedItem item) const {
+    switch(item) {
+        case EquippedItem::Hat: return has_hat;
+        case EquippedItem::Clothes: return has_clothes;
+        case EquippedItem::Sunglasses: return has_sunglasses;
+        default: return false;
+    }
 }

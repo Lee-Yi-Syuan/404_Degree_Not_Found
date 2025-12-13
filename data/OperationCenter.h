@@ -33,10 +33,11 @@ private:
 	
 	//互動用的function
 	void _update_monster_player();
-	void _update_character_bed();
-	void _update_candle_character();
-	void _update_closet_character();
-	void _update_door_character();
+	void _update_character_bed(bool enabled = true);
+	void _update_candle_character(bool enabled = true);
+	void _update_closet_character(bool enabled = true);
+	void _update_door_character(bool enabled = true);
+	void _update_table_character(bool enabled = true);
 private:
 	//void _draw_monster();
 	//void _draw_tower();

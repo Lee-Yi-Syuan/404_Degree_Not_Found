@@ -1,5 +1,6 @@
 #include "candle.h"
 #include "floor.h"
+#include "table.h"
 #include "../data/DataCenter.h"
 #include "../Game.h"
 #include "../data/ImageCenter.h"
@@ -7,6 +8,7 @@
 #include "../Character/Character.h"
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
+#include <allegro5/allegro_primitives.h>
 
 using namespace std;
 
@@ -37,8 +39,13 @@ void Candle::init() {
     h=al_get_bitmap_height(img);
 
     //燭台的左上角(x,y)座標
-    x1=DC->floor->get_x1()+500;
-    y1=DC->floor->get_y1()-h+500;
+    if(DC->table && DC->table->shape) {
+        x1 = DC->table->shape->center_x() - w/2;
+        y1 = DC->table->shape->center_y() - h/2;
+    } else {
+        x1 = 100;
+        y1 = 100;
+    }
 
     //設定燭台的碰撞箱
     shape.reset(new Rectangle{
@@ -63,9 +70,19 @@ void Candle::draw() {
     if(showing_prompt)
     {
         FontCenter *FC = FontCenter::get_instance();
+        
+        // Draw dialog box
+        float cx = DC->window_width/2;
+        float cy = DC->window_height - 100;
+        float box_w = 800;
+        float box_h = 100;
+        
+        al_draw_filled_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgba(0, 0, 0, 200));
+        al_draw_rectangle(cx - box_w/2, cy - box_h/2, cx + box_w/2, cy + box_h/2, al_map_rgb(255, 255, 255), 3);
+        
         al_draw_text(
             FC->courier_new[FontSize::LARGE], al_map_rgb(255, 255, 255),
-            DC->window_width/2, DC->window_height - 100,
+            cx, cy - 15,
             ALLEGRO_ALIGN_CENTRE, "Press E to light the candle.");
     }
 }
@@ -77,15 +94,16 @@ bool Candle::is_player_touching() {
  
     return trigger_shape->overlap(*(character->shape));
 }
-void Candle::interact() {
+void Candle::interact(bool enabled) {
     
     DataCenter *DC = DataCenter::get_instance();
 
     // 若角色碰到互動箱
-    if (is_player_touching())
+    if (enabled && is_player_touching())
         state = CandleState::touched;
     else {
         state = CandleState::untouched;
+        showing_prompt = false;
     }
     // 若碰到且尚未點亮燭台
     if(state==CandleState::touched && !candle_light)
@@ -96,6 +114,14 @@ void Candle::interact() {
             showing_prompt = !showing_prompt;
             DC->character->set_movability(!showing_prompt);
         }
+        
+        // 按下ESC鍵時，關閉提示視窗並恢復角色移動
+        if(showing_prompt && DC->key_state[ALLEGRO_KEY_ESCAPE] && !DC->prev_key_state[ALLEGRO_KEY_ESCAPE])
+        {
+            showing_prompt = false;
+            DC->character->set_movability(true);
+        }
+
         // 按下E鍵時，點亮燭台
         if(showing_prompt&&DC->key_state[ALLEGRO_KEY_E] && !DC->prev_key_state[ALLEGRO_KEY_E])
         {
