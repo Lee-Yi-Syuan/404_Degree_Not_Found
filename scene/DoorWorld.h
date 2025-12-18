@@ -49,6 +49,18 @@ private:
     int win_score;
     DWorldState state;
     bool return_to_main;
+
+    //圖片
+private:
+    ALLEGRO_BITMAP *background = nullptr;
+    ALLEGRO_BITMAP *player_img1 = nullptr; // 因為我想要讓他有走路的感覺所以
+    ALLEGRO_BITMAP *player_img2 = nullptr; 
+    ALLEGRO_BITMAP *enemy_img = nullptr;
+    ALLEGRO_BITMAP *award_img = nullptr;
+
+    int animation_tick = 0; // 用來計數，決定切換速度
+    bool face_right = false; // 圖片預設朝左，所以預設設為 false (不翻轉)
+
 };
 
 #endif

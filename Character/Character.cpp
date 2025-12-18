@@ -4,176 +4,139 @@
 #include "../object/table.h"
 #include "../object/floor.h"
 #include "../data/DataCenter.h"
-#include "../data/GIFCenter.h"
 #include "../data/ImageCenter.h"
 #include "../shapes/Point.h"
 #include "../shapes/Rectangle.h"
 #include "../Utils.h"
 #include <allegro5/allegro_primitives.h>
-
-using namespace std;
-
-namespace CharacterSetting {
-	static constexpr char character_imgs_root_path[40] = {
-		"./assets/gif/Hero/dragonite_"
-	};
-	static constexpr char dir_path_postfix[][10] = {
-		"left", "right", "front", "back"
-	};
-}
+#include <allegro5/allegro_image.h>
+#include <iostream>
 
 void Character::init()
 {
+    // 初始化基本數值
+    speed = 5.0f; 
+    animation_tick = 0;
+    face_right = true;
+    state = CharacterState::Front;
+    movable = true;
 
-	//載入gif路徑
-	for(int i=0;i<static_cast<int>(CharacterState::CharacterState_MAX);i++)
-	{
-		gitfPath[static_cast<CharacterState>(i)]=string(CharacterSetting::character_imgs_root_path)+string(CharacterSetting::dir_path_postfix[i])+".gif";
-	}
-	GIFCenter *GC=GIFCenter::get_instance();
-	ALGIF_ANIMATION *gif=GC->get(gitfPath[state]);
+    // 載入兩張走路圖片
+    move_img1 = al_load_bitmap("./assets/image/player1.png");
+    move_img2 = al_load_bitmap("./assets/image/player2.png");
 
-	//設定角色初始位置
-	DataCenter *DC=DataCenter::get_instance();
-	int wh=DC->window_height;
-	int ww=DC->window_width;
-	//設定角色寬高
-	w=gif->width;
-	h=gif->height;
-	//設定角色碰撞箱
-	shape.reset(new Rectangle{
-		ww /2.0 , wh / 2.0,
-		ww / 2.0 + w,
-		wh / 2.0 + h});
+    DataCenter *DC = DataCenter::get_instance();
+    
+    // --- 調整重點：將邏輯寬高放大兩倍 (50 -> 100) ---
+    w = 100.0f; 
+    h = 100.0f; 
+
+    if (!move_img1) {
+        std::cerr << "Error: Player images not found! Drawing blocks instead." << std::endl;
+    }
+
+    // 設定初始位置 (置中)
+    shape.reset(new Rectangle{
+        DC->window_width / 2.0f - w / 2.0f, 
+        DC->window_height / 2.0f - h / 2.0f,
+        DC->window_width / 2.0f + w / 2.0f,
+        DC->window_height / 2.0f + h / 2.0f});
 }
+
 void Character::update()
 {
-	//移動
-	if(!movable)	return;
-	DataCenter *DC=DataCenter::get_instance();
+    if(!movable) return;
+    DataCenter *DC = DataCenter::get_instance();
 
+    float old_x = shape->center_x();
+    float old_y = shape->center_y();
+    float dx = 0, dy = 0;
+    bool is_moving = false;
 
-	//儲存舊位置
-	float old_x=shape->center_x();
-	float old_y=shape->center_y();
+    // 分開偵測 X 與 Y，允許斜向移動，並更新 face_right
+    if(DC->key_state[ALLEGRO_KEY_LEFT]) {
+        state = CharacterState::LEFT;
+        dx = -speed; face_right = false; is_moving = true;
+    } else if(DC->key_state[ALLEGRO_KEY_RIGHT]) {
+        state = CharacterState::RIGHT;
+        dx = speed; face_right = true; is_moving = true;
+    }
+    
+    if(DC->key_state[ALLEGRO_KEY_UP]) {
+        state = CharacterState::Back;
+        dy = -speed; is_moving = true;
+    } else if(DC->key_state[ALLEGRO_KEY_DOWN]) {
+        state = CharacterState::Front;
+        dy = speed; is_moving = true;
+    }
 
-	//移動距離
-	float dx=0, dy=0;
+    // 更新動畫幀計時
+    if (is_moving) animation_tick = (animation_tick + 1) % 40;
+    else animation_tick = 0;
 
-	//鍵盤控制
-	if(DC->key_state[ALLEGRO_KEY_LEFT])
-	{
-		state=CharacterState::LEFT;
-		dx=-speed;
-		
-	}
-	if(DC->key_state[ALLEGRO_KEY_RIGHT])
-	{
-		state=CharacterState::RIGHT;
-		dx=speed;
-	}
-	if(DC->key_state[ALLEGRO_KEY_UP])
-	{
-		state=CharacterState::Back;
-		dy=-speed;
-	}
-	if(DC->key_state[ALLEGRO_KEY_DOWN])
-	{
-		state=CharacterState::Front;
-		dy=speed;
-	}
+    // 更新位置
+    shape->update_center_x(old_x + dx);
+    shape->update_center_y(old_y + dy);
 
+    // 碰撞檢查邏輯
+    if(!DC->floor->is_on_floor(shape->center_x(), shape->center_y())) {
+        shape->update_center_x(old_x); shape->update_center_y(old_y);
+    }
+    
+    if(shape->center_x() < 0 || shape->center_x() > DC->window_width ||
+       shape->center_y() < 0 || shape->center_y() > DC->window_height) {
+        shape->update_center_x(old_x); shape->update_center_y(old_y);
+    }
 
-	//更新位置
-	shape->update_center_x(old_x+dx);
-	shape->update_center_y(old_y+dy);
-
-
-	//確認角色是否在地板區域內
-	if(!DC->floor->is_on_floor(shape->center_x(),shape->center_y()))
-	{
-		//若否，移回原位置
-		shape->update_center_x(old_x);
-		shape->update_center_y(old_y);
-	}
-
-	//確認角色是否超出視窗範圍
-	if(shape->center_x()<0)
-		shape->update_center_x(old_x);
-	if(shape->center_x()>DC->window_width)
-		shape->update_center_x(old_x);
-	if(shape->center_y()<0)
-		shape->update_center_y(old_y);
-	if(shape->center_y()>DC->window_height)
-		shape->update_center_y(old_y);
-
-	//確認角色是否與床發生碰撞
-	if(shape->overlap(*(DC->bed->shape)))
-	{
-		//若是，移回原位置
-		shape->update_center_x(old_x);
-		shape->update_center_y(old_y);
-	}
-
-	//確認角色是否與衣櫃發生碰撞
-	if(shape->overlap(*(DC->closet->shape)))
-	{
-		//若是，移回原位置
-		shape->update_center_x(old_x);
-		shape->update_center_y(old_y);
-	}
-
-	if(shape->overlap(*(DC->table->shape)))
-	{
-		//若是，移回原位置
-		shape->update_center_x(old_x);
-		shape->update_center_y(old_y);
-	}
-	
-	
+    if(shape->overlap(*(DC->bed->shape)) || 
+       shape->overlap(*(DC->closet->shape)) || 
+       shape->overlap(*(DC->table->shape))) {
+        shape->update_center_x(old_x); shape->update_center_y(old_y);
+    }
 }
+
 void Character::draw()
 {
-	GIFCenter *GC=GIFCenter::get_instance();
-	ALGIF_ANIMATION *gif=GC->get(gitfPath[state]);
-	algif_draw_gif(gif,
-				   shape->center_x()-w/2,
-				   shape->center_y()-h/2,0);
-
-    // Draw equipped item
     float cx = shape->center_x();
     float cy = shape->center_y();
     float top = cy - h/2;
-    
+
+    // 繪製角色本體
+    ALLEGRO_BITMAP* current_img = (animation_tick < 20) ? move_img1 : move_img2;
+    if (current_img) {
+        int flags = face_right ? ALLEGRO_FLIP_HORIZONTAL : 0;
+        // 使用放大後的 w, h (100x100) 進行繪製
+        al_draw_scaled_bitmap(current_img,
+            0, 0, al_get_bitmap_width(current_img), al_get_bitmap_height(current_img),
+            cx - w/2, cy - h/2, w, h, flags);
+    } else {
+        // 備援藍色方塊也同步放大
+        al_draw_filled_rectangle(cx - w/2, cy - h/2, cx + w/2, cy + h/2, al_map_rgb(0, 0, 255));
+    }
+
+    // --- 裝備繪製參數調整 (配合 100x100 尺寸) ---
     if (has_hat) {
-        // Draw a red hat
-        al_draw_filled_triangle(cx - 15, top + 10, cx + 15, top + 10, cx, top - 15, al_map_rgb(255, 0, 0));
+        // 加大帽子底邊與高度
+        al_draw_filled_triangle(cx - 25, top + 10, cx + 25, top + 10, cx, top - 25, al_map_rgb(255, 0, 0));
     }
     if (has_clothes) {
-        // Draw a blue shirt (simple rectangle over body)
-        al_draw_filled_rectangle(cx - 15, top + 30, cx + 15, top + 60, al_map_rgb(0, 0, 255));
+        // 加大衣服寬度與覆蓋高度
+        al_draw_filled_rectangle(cx - 25, top + 35, cx + 25, top + 85, al_map_rgb(0, 0, 255));
     }
     if (has_sunglasses) {
-        // Draw black sunglasses
-        al_draw_filled_circle(cx - 5, top + 15, 4, al_map_rgb(0, 0, 0));
-        al_draw_filled_circle(cx + 5, top + 15, 4, al_map_rgb(0, 0, 0));
-        al_draw_line(cx - 5, top + 15, cx + 5, top + 15, al_map_rgb(0, 0, 0), 2);
+        float eye_y = top + 25; // 調整眼睛位置高度
+        al_draw_filled_circle(cx - 10, eye_y, 6, al_map_rgb(0, 0, 0)); // 加大鏡片
+        al_draw_filled_circle(cx + 10, eye_y, 6, al_map_rgb(0, 0, 0));
+        al_draw_line(cx - 10, eye_y, cx + 10, eye_y, al_map_rgb(0, 0, 0), 3); // 加粗連線
     }
 }
 
 void Character::toggle_equipped_item(EquippedItem item) {
     switch(item) {
-        case EquippedItem::Hat:
-            has_hat = !has_hat;
-            break;
-        case EquippedItem::Clothes:
-            has_clothes = !has_clothes;
-            break;
-        case EquippedItem::Sunglasses:
-            has_sunglasses = !has_sunglasses;
-            break;
-        case EquippedItem::None:
-            break;
+        case EquippedItem::Hat: has_hat = !has_hat; break;
+        case EquippedItem::Clothes: has_clothes = !has_clothes; break;
+        case EquippedItem::Sunglasses: has_sunglasses = !has_sunglasses; break;
+        default: break;
     }
 }
 

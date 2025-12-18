@@ -1,9 +1,12 @@
 #ifndef Character_H_INCLUDED
 #define Character_H_INCLUDED
 
+
 #include "../Object.h"
 #include "../shapes/Rectangle.h"
 #include "../shapes/Point.h"
+#include <allegro5/allegro.h>         
+#include <allegro5/allegro_image.h>  
 #include <vector>
 #include <queue>
 #include <map>
@@ -47,6 +50,14 @@ class Character : public Object
 		int w,h;
 		//角色是否可移動
 		bool movable=true;
+		// 在 Character 類別的 private 或 protected 區塊
+
+		//我這邊有改一下主角的長相
+		private:
+			ALLEGRO_BITMAP* move_img1 = nullptr;
+			ALLEGRO_BITMAP* move_img2 = nullptr;
+			int animation_tick = 0;      // 用於計時
+			bool face_right = true;      // 記錄水平翻轉狀態
 };
 
 #endif
