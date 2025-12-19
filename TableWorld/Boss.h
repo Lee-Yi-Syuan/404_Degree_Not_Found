@@ -43,14 +43,23 @@ class Boss : public Object
         //void take_damage(int damage);
         //int get_HP() const { return HP; }
         //int get_maxHP() const { return maxHP; }
+
+        //載入血量系統
         HealthComponent hp_system;
+
+        //重力系統
 		BossGravity gravity;
 		int width() const { return w; }
 		int height() const { return h; }
         int fly_timer = 0;
         
+        //設定boss是否在移動狀態
         void set_active(bool active) { is_active = active; }
+        //確認boss是否在移動狀態
         bool get_active() const { return is_active; }
+
+
+        
         void spawn(); // Activate with effect
         BossDirection get_dir() const { return dir; }
         

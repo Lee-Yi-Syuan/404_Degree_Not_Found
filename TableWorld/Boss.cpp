@@ -37,17 +37,19 @@ void Boss::init()
 	w = al_get_bitmap_width(img);
 	h = al_get_bitmap_height(img);
     
-    // Initial position (e.g., right side of screen)
+    // 初始化位置在畫面右半邊中央
 	shape.reset(new Rectangle{
 		ww - 200.0, wh / 2.0,
 		ww - 200.0 + w,
 		wh / 2.0 + h
     });
     
+    // 初始狀態
     state = BossState::IDLE;
     action_duration = 30; // 0.5 second
     action_timer = 0;
     
+    // 初始化血量系統
     hp_system.init(500);
     is_active = false; // Default hidden
     spawn_effect_timer = 0;
@@ -62,63 +64,74 @@ void Boss::spawn() {
 
 void Boss::update()
 {
+    //若還沒進到boss活動狀態則不更新
     if(!is_active) return;
+
     if(spawn_effect_timer > 0) spawn_effect_timer--;
 
-    // AI Decision
+    // 若到了行動抉擇時間，進入抉擇函數
     if(action_timer <= 0) {
         ai_decision();
-    } else {
+    } 
+    else   //反之行動計時器減少 
+    {
         action_timer--;
     }
     
+    //若處於飛行狀態則飛行計時器增加
     if(state == BossState::FLY) {
         fly_timer++;
     } else {
         fly_timer = 0;
     }
 
-    // Movement Logic based on state
+    //移動量初始化
     float dx = 0, dy = 0;
     
-    // Gravity
+    // 若沒有處於飛行狀態則垂直加速度增加
     if(state != BossState::FLY) {
         gravity.vy += gravity_acc;
-    } else {
-        // Flying logic (hover or move up/down)
-        // For simplicity, let's just say FLY state defies gravity
+    } 
+    else
+    {
+        // 微調垂直加速度以達到穩定飛行效果
         if(gravity.vy > 0) gravity.vy -= 0.2;
         if(gravity.vy < 0) gravity.vy += 0.2;
-    }
 
-    if(state == BossState::MOVE) {
-        if(dir == BossDirection::LEFT) dx = -speed;
-        else if(dir == BossDirection::RIGHT) dx = speed;
-    } else if (state == BossState::ATTACK && current_attack == BossAttackType::SHORT) {
-        // Move forward during Short Attack (Lunge)
-        float lunge_speed = speed * 0.5; // Slower than run, but moving
-        if(dir == BossDirection::LEFT) dx = -lunge_speed;
-        else if(dir == BossDirection::RIGHT) dx = lunge_speed;
-    } else if (state == BossState::FLY) {
-        // Fly logic
-        // If flying, try to stay above ground but not too high
-        if(shape->center_y() > 300) dy = -fly_speed; // Fly up
-        else if (shape->center_y() < 100) dy = fly_speed; // Fly down
-        else dy = 0; // Hover
+        // 若高度過高或過低，則調整垂直移動量
+        if(shape->center_y() > 300) dy = -fly_speed;
+        else if (shape->center_y() < 100) dy = fly_speed;
+        else dy = 0; //若在範圍中間則不調整高度
         
-        // Move horizontally while flying to evade or chase
-        // For now, just drift in current direction
+        // 水平移動，模擬漂浮
         if(dir == BossDirection::LEFT) dx = -speed * 1.2;
         else if(dir == BossDirection::RIGHT) dx = speed * 1.2;
     }
 
+    //如果處於移動模式則依方向移動
+    if(state == BossState::MOVE) 
+    {
+        if(dir == BossDirection::LEFT) dx = -speed;
+        else if(dir == BossDirection::RIGHT) dx = speed;
+    } 
+    //若處於攻擊模式則根據攻擊類型決定行動
+    else if (state == BossState::ATTACK && current_attack == BossAttackType::SHORT) 
+    {
+        // 在短距離攻擊模式下，boss邊向前邊揮刀
+        float lunge_speed = speed * 0.5; //揮刀的移動較慢
+        //由面對方向決定移動方向
+        if(dir == BossDirection::LEFT) dx = -lunge_speed;
+        else if(dir == BossDirection::RIGHT) dx = lunge_speed;
+    } 
+
+    //最後依照上面得出的垂直加速度更新垂直移動量
     dy += gravity.vy;
 
-    // Update Position
+    //再由移動量更新位置
     shape->update_center_x(shape->center_x() + dx);
     shape->update_center_y(shape->center_y() + dy);
     
-    // Boundary checks (simple)
+    // 邊界測試
     DataCenter *DC = DataCenter::get_instance();
     if(shape->center_x() < 0) shape->update_center_x(0 + w/2);
     if(shape->center_x() > DC->window_width) shape->update_center_x(DC->window_width - w/2);
@@ -126,6 +139,7 @@ void Boss::update()
 
 void Boss::draw()
 {
+    //若還沒進到boss活動狀態則不繪製
     if(!is_active) return;
 
 	ImageCenter *IC = ImageCenter::get_instance();
@@ -138,33 +152,29 @@ void Boss::draw()
     }
     
     al_draw_bitmap(img, shape->center_x()-w/2, shape->center_y()-h/2, flags);
-    
-    // Draw black overlay (Shadow effect)
-    al_set_blender(ALLEGRO_ADD, ALLEGRO_ALPHA, ALLEGRO_INVERSE_ALPHA);
-    al_draw_filled_rectangle(shape->center_x()-w/2, shape->center_y()-h/2, shape->center_x()+w/2, shape->center_y()+h/2, al_map_rgba(0, 0, 0, 150));
-    al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA); // Restore blender
 
     hp_system.draw_boss_health();
     
-    // Spawn Effect
+    //畫Boss出場特效
     if(spawn_effect_timer > 0) {
+        //ratio跟spawn_effect_timer成正比,代表逐漸變小(剩餘面積)
         float ratio = (float)spawn_effect_timer / 60.0f;
-        float radius = 100 * (1.0f - ratio) + 50; // Expand
+        //radius與ratio成反比，代表逐漸變大
+        float radius = 100 * (1.0f - ratio) + 50; 
+        //這邊畫的是一個紅色的圓圈，代表出場特效，會隨著剩餘時間越小而變大變淡
         al_draw_circle(shape->center_x(), shape->center_y(), radius, al_map_rgb(255, 0, 0), 5 * ratio);
+        //這邊畫得是一個填滿的圓圈，代表出場特效，會隨著剩餘時間越小而變大變淡
         al_draw_filled_circle(shape->center_x(), shape->center_y(), radius, al_map_rgba(255, 0, 0, 100 * ratio));
     }
 }
 
-// void Boss::take_damage(int damage) {
-//     HP -= damage;
-//     if (HP < 0) HP = 0;
-// }
-
+//boss的決策系統
 void Boss::ai_decision()
 {
     DataCenter *DC = DataCenter::get_instance();
     THero *hero = DC->thero;
     
+    //若主角不存在或已死亡則進入待機狀態
     if(!hero || !hero->hp_system.is_alive()) {
         state = BossState::IDLE;
         action_duration = 30;
@@ -172,30 +182,32 @@ void Boss::ai_decision()
         return;
     }
 
+    //計算與主角的距離
     double dist_x = hero->shape->center_x() - shape->center_x();
     double dist_y = hero->shape->center_y() - shape->center_y();
     double distance = sqrt(dist_x*dist_x + dist_y*dist_y);
     
-    // Face the hero
+    // boss會根據主角位置調整面向方向
     if(dist_x > 0) dir = BossDirection::RIGHT;
     else dir = BossDirection::LEFT;
 
-    // If currently flying, check timer
+    // 如果處於飛行狀態，則優先處理飛行邏輯
     if(state == BossState::FLY) {
-        if(fly_timer > 300) { // 5 seconds (60 FPS * 5)
-            // Stop flying
-            state = BossState::IDLE; // Fall down
-            gravity.on_ground = false;
-            fly_timer = 0;
-            action_duration = 20;
+        if(fly_timer > 300) // 超過5秒則停止飛行
+        { 
+            state = BossState::IDLE;    //先將狀態設為待機
+            gravity.on_ground = false;  //由於可能會在天上降落，故設為false
+            fly_timer = 0;              //重置飛行計時器
+            action_duration = 20;       //短暫的待機時間讓boss落地
             return;
         }
         
-        // While flying, high frequency attacks
-        // 50% chance to attack every decision tick (which is short if action_duration is low)
+        // 當在飛行時，攻擊機率提高
         int fly_attack_r = rand() % 100;
-        if(fly_attack_r < 60) { // 60% chance to attack while flying
+        if(fly_attack_r < 60)  // 60% 機率攻擊
+        { 
             state = BossState::ATTACK;
+            //50% 普攻，50% 範圍攻擊
             if(rand() % 2 == 0) {
                 current_attack = BossAttackType::NORMAL;
                 action_duration = 60;
@@ -206,31 +218,30 @@ void Boss::ai_decision()
             
             perform_attack();
         } else {
-            // Just move/hover
+            // 否則繼續飛行
             action_duration = 15;
         }
         return;
     }
 
-    // Ground Logic
-    if(distance < 250) {
-        // Too close!
+    // 若不在飛行模式，根據與主角距離決定行動
+    if(distance < 250) {   //若距離小於250，表示太近
         int r = rand() % 100;
         if(r < 40) {
-            // Move away
+            // Boss進入到逃跑模式
             state = BossState::MOVE;
-            // Move in opposite direction of hero
+            // 往遠離主角方向移動
             if(dist_x > 0) dir = BossDirection::LEFT; 
             else dir = BossDirection::RIGHT;
             action_duration = 20;
         } else if (r < 80) {
-            // Short attack (defensive)
+            // 短距離攻擊 (防禦性攻擊)
             state = BossState::ATTACK;
             current_attack = BossAttackType::SHORT;
             perform_attack();
             action_duration = 80;
         } else {
-            // Fly up to evade
+            // 嘗試飛行以拉開距離
             state = BossState::FLY;
             gravity.vy = -12;
             gravity.on_ground = false;
@@ -238,13 +249,12 @@ void Boss::ai_decision()
             action_duration = 25;
         }
     } else if (distance > 600) {
-        // Too far, get closer
+        // 若距離大於600，表示太遠
         state = BossState::MOVE;
-        // Direction is already set to face hero
         action_duration = 30;
     } else {
-        // Optimal distance (250-600)
-        // 40% Nor, 40% Short, 10% Region, 10% Move/Idle
+        // 適中距離則隨機選擇攻擊或移動
+        // 40% 普攻, 40% 短距離攻擊, 10% 範圍攻擊, 10% 移動/待機
         int attack_r = rand() % 100;
         
         if(attack_r < 40) {
@@ -263,7 +273,7 @@ void Boss::ai_decision()
             perform_attack();
             action_duration = 180; // 60 * 3 = 180
         } else {
-            // Adjust position slightly
+            // 微調位置
             state = BossState::MOVE;
             if(rand() % 2 == 0) dir = (dir == BossDirection::LEFT) ? BossDirection::RIGHT : BossDirection::LEFT;
             action_duration = 30;
