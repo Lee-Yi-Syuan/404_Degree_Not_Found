@@ -25,15 +25,10 @@ namespace BossSetting {
 
 void Boss::init()
 {
-    // Load GIF paths
-    // 使用 milkdragon.gif (預設面向左)
-    string path = "./assets/gif/Hero/calculus.jpg";
-	for(int i=0; i<static_cast<int>(BossDirection::BossDirection_MAX); i++)
-	{
-		gifPath[static_cast<BossDirection>(i)] = path;
-	}
-	ImageCenter *IC = ImageCenter::get_instance();
-	ALLEGRO_BITMAP *img = IC->get(gifPath[dir]);
+    
+    ImageCenter *IC = ImageCenter::get_instance();
+    imgPath = "./assets/gif/Hero/calculus.jpg";
+	ALLEGRO_BITMAP *img = IC->get(imgPath);
 
 	DataCenter *DC = DataCenter::get_instance();
 	int wh = DC->window_height;
@@ -134,7 +129,7 @@ void Boss::draw()
     if(!is_active) return;
 
 	ImageCenter *IC = ImageCenter::get_instance();
-	ALLEGRO_BITMAP *img = IC->get(gifPath[dir]);
+	ALLEGRO_BITMAP *img = IC->get(imgPath);
     
     // GIF 原圖面向左，若 Boss 面向右則翻轉
     int flags = 0;

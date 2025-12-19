@@ -70,7 +70,7 @@ class Boss : public Object
         double fly_speed = 5;
 
 		//角色圖片路徑
-		std::map<BossDirection,std::string> gifPath;
+		std::string imgPath;
 		//角色寬高
 		int w, h;
 
