@@ -25,64 +25,67 @@ UI::update() {
     }
 }
 
-void
-UI::draw() {
-	DataCenter *DC = DataCenter::get_instance();
-	FontCenter *FC = FontCenter::get_instance();
+void UI::draw() {
+    DataCenter *DC = DataCenter::get_instance();
+    FontCenter *FC = FontCenter::get_instance();
 
-    
     const int now_point = DC->player->now_point;
     const int now_fail = DC->player->now_fail;
     const int now_club_point = DC->player->now_club_point;
     const int now_love_point = DC->player->now_love_point;
     const int now_study_point = DC->player->now_study_point;
 
-    // 顏色位置
-    ALLEGRO_COLOR text_color = al_map_rgb(0, 0, 0); // Black
-    const int top_left_x = 10;
-    const int top_y_start = 10;
-    const int line_spacing = 30; // Line spacing
-    const int top_right_x = DC->window_width - 10;
-    const int padding_right = 180; // Right side text padding
-
+    // 設定顏色
+    ALLEGRO_COLOR main_color = al_map_rgb(0, 0, 0);       // 黑色主文字
+    ALLEGRO_COLOR outline_color = al_map_rgb(255, 255, 255); // 白色外框
     
-    //左上角
+    const int top_left_x = 20; // 稍微增加邊距，避免太貼邊
+    const int top_y_start = 20;
+    const int line_spacing = 35; 
+    const int top_right_x = DC->window_width - 20;
+    
+    ALLEGRO_FONT* font = FC->courier_new[FontSize::MEDIUM];
 
-    //總學分
-    al_draw_textf(
-        FC->courier_new[FontSize::MEDIUM], text_color,
-        top_left_x, top_y_start,
-        ALLEGRO_ALIGN_LEFT, "Total Credits: %d / 128", now_point);
+    // --- 定義一個小 lambda 函數來簡化「畫外框字」的重複動作 ---
+    auto draw_text_with_outline = [&](float x, float y, int align, const char* format, int value1, int value2 = -1) {
+        char buf[100];
+        if (value2 == -1) sprintf(buf, format, value1);
+        else sprintf(buf, format, value1, value2);
 
-    //不及格科目
-    al_draw_textf(
-        FC->courier_new[FontSize::MEDIUM], text_color,
-        top_left_x, top_y_start + line_spacing,
-        ALLEGRO_ALIGN_LEFT, "Failed Courses: %d / 3", now_fail);
+        // 畫白色外框 (上下左右位移 2 像素)
+        al_draw_text(font, outline_color, x + 2, y, align, buf);
+        al_draw_text(font, outline_color, x - 2, y, align, buf);
+        al_draw_text(font, outline_color, x, y + 2, align, buf);
+        al_draw_text(font, outline_color, x, y - 2, align, buf);
+        // 畫黑色主體
+        al_draw_text(font, main_color, x, y, align, buf);
+    };
 
+    // --- 左上角：總進度 ---
+    
+    // 總學分 (Total Credits)
+    draw_text_with_outline(top_left_x, top_y_start, ALLEGRO_ALIGN_LEFT, 
+                           "Total Credits: %d / 128", now_point);
 
-    // 右上角
+    // 不及格科目 (Failed Courses)
+    draw_text_with_outline(top_left_x, top_y_start + line_spacing, ALLEGRO_ALIGN_LEFT, 
+                           "Failed Courses: %d / 3", now_fail);
 
-	
-    // 課業學分
-    al_draw_textf(
-        FC->courier_new[FontSize::MEDIUM], text_color,
-        top_right_x, top_y_start,
-        ALLEGRO_ALIGN_RIGHT, "Study Credits: %d", now_study_point);
+    // --- 右上角：各項分數 ---
 
-    // 戀愛學分
-    al_draw_textf(
-        FC->courier_new[FontSize::MEDIUM], text_color,
-        top_right_x, top_y_start + 1 * line_spacing,
-        ALLEGRO_ALIGN_RIGHT, "Love Credits: %d", now_love_point);
+    // 課業學分 (Study)
+    draw_text_with_outline(top_right_x, top_y_start, ALLEGRO_ALIGN_RIGHT, 
+                           "Study Credits: %d", now_study_point);
 
-    // 社團學分
-    al_draw_textf(
-        FC->courier_new[FontSize::MEDIUM], text_color,
-        top_right_x, top_y_start + 2 * line_spacing,
-        ALLEGRO_ALIGN_RIGHT, "Club Credits: %d", now_club_point);
+    // 戀愛學分 (Love)
+    draw_text_with_outline(top_right_x, top_y_start + 1 * line_spacing, ALLEGRO_ALIGN_RIGHT, 
+                           "Love Credits: %d", now_love_point);
 
-    // Draw result dialog on top if active
+    // 社團學分 (Club)
+    draw_text_with_outline(top_right_x, top_y_start + 2 * line_spacing, ALLEGRO_ALIGN_RIGHT, 
+                           "Club Credits: %d", now_club_point);
+
+    // 原本的結果對話框邏輯
     if (showing_result) {
         draw_result_dialog();
     }

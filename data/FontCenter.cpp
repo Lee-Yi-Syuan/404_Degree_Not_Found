@@ -3,9 +3,9 @@
 #include <iostream> 
 
 namespace FontSetting {
-    const char caviar_dreams_font_path[] = "./assets/font/Caviar_Dreams_Bold.ttf";
+    const char caviar_dreams_font_path[] = "./assets/font/pixelpurl.medium.ttf";
     // 有改字體喔喔
-    const char arcade_classic_font_path[] = "./assets/font/Star Crush.ttf"; 
+    const char arcade_classic_font_path[] = "./assets/font/pixelpurl.medium.ttf"; 
 }
 
 void
