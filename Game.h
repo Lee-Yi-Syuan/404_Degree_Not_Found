@@ -2,6 +2,7 @@
 #define GAME_H_INCLUDED
 
 #include <allegro5/allegro.h>
+#include <allegro5/allegro_audio.h>
 #include "UI.h"
 #include "scene/Start.h"
 #include "scene/TableWorld.h"
@@ -22,6 +23,8 @@ public:
     void game_init();
     bool game_update();
     void game_draw();
+    void change_bgm(const char* path);
+
 private:
     /**
      * @brief States of the game process in game_update.
@@ -48,6 +51,12 @@ private:
     TWorldScreen* table_world_screen;
     DWorld* door_world_screen; // Added
     EndScreen* end_screen; //結局
+    ALLEGRO_SAMPLE_INSTANCE* current_bgm = nullptr;
+    ALLEGRO_SAMPLE* current_bgm_sample = nullptr;
+    ALLEGRO_SAMPLE_INSTANCE* current_bgm_instance = nullptr;
+
+
+
 };
 
 #endif
