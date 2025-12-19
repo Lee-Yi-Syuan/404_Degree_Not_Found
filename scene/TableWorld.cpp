@@ -40,7 +40,7 @@ void TWorldScreen::init()
     }
 
     //勝利與失敗圖片
-    tworld_img_result_paths[0] = "./assets/image/tworld/success.jpg";
+    tworld_img_result_paths[0] = "./assets/image/tworld/success.png";
     tworld_img_result_paths[1] = "./assets/image/tworld/fail.png";
     //載入勝利與失敗圖片
     for (const auto& pair : tworld_img_result_paths) {
