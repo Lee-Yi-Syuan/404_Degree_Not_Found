@@ -331,8 +331,8 @@ Game::game_update() {
         } case STATE::Table_world: {
             //進入桌子遊戲
             TFloor* tfloor=DC->tfloor;
-            int type=table_world_screen->get_current_TWorld_type();
-            tfloor->load_map(type); // Moved to start_level()
+            // int type=table_world_screen->get_current_TWorld_type();
+            // tfloor->load_map(type); // Moved to start_level()
             table_world_screen->update();
             
             if(table_world_screen->is_return_to_main()) {

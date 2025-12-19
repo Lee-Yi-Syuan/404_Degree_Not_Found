@@ -16,6 +16,7 @@ class NorAttack: public Object
         //普通攻擊圖像右上角(x,y)座標
         int x, y;          // the position of image
         int width, height; // the width and height of image
+         ALLEGRO_BITMAP *img;
         //ALLEGRO_BITMAP *img;
 
         int life_counter = 0;

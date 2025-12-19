@@ -64,8 +64,8 @@ void TWorldScreen::start_level()
     if(DC->thero) {
         // Reset HP if needed, or just position
         DC->thero->hp_system.set_hp(DC->thero->hp_system.get_max_hp()); // Optional: Full heal on entry?
-        DC->thero->shape->update_center_x(50); // Start near left edge
-        DC->thero->shape->update_center_y(DC->window_height - 100); // Ensure on ground
+        DC->thero->shape->update_center_x(-50); // Start off-screen left
+        DC->thero->shape->update_center_y(DC->window_height - 120); // Ensure on ground
         DC->thero->set_input_locked(true);
     }
     
@@ -101,10 +101,10 @@ void TWorldScreen::update()
             tfloor->interact();
             
             // Auto-walk right
-            thero->force_move(true); // true = right
+            thero->force_move(2.0); // Move right
             
             // Check if reached position
-            if(thero->shape->center_x() > 200) {
+            if(thero->shape->center_x() > 100) {
                 level_state = LevelState::WAIT_BOSS;
                 state_timer = 0;
             }
@@ -123,21 +123,22 @@ void TWorldScreen::update()
             break;
             
         case LevelState::BATTLE:
-            // Normal Battle Logic
+            // 如果Boss或角色都還活著，才更新它們
             if(thero->hp_system.is_alive()) thero->update();
             if(boss->hp_system.is_alive()) boss->update();
             tfloor->interact();
             
-            // Update Attacks
+            // 更新攻擊特效物件
             for(auto attack : DC->nor_attacks) attack->update();
             for(auto attack : DC->region_attacks) attack->update();
             for(auto attack : DC->boss_nor_attacks) attack->update();
             for(auto attack : DC->boss_region_attacks) attack->update();
             for(auto attack : DC->boss_short_attacks) attack->update();
             
+            // 處理傷害碰撞
             DamageSystem::update();
             
-            // Check Win/Loss
+            // 確認Boss是否還活著或主角死亡以決定關卡結束
             if(!boss->hp_system.is_alive()) {
                 victory = true;
                 level_state = LevelState::VICTORY;
@@ -188,12 +189,13 @@ void TWorldScreen::draw()
     Boss* boss=DC->boss;
     tfloor->draw();
     
-    if(thero->hp_system.is_alive()) {
-        thero->draw();
-    }
     
     if(boss->hp_system.is_alive() && boss->get_active()) {
         boss->draw();
+    }
+
+    if(thero->hp_system.is_alive()) {
+        thero->draw();
     }
 
     // 繪製所有攻擊物件

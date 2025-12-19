@@ -26,19 +26,21 @@ namespace BossSetting {
 void Boss::init()
 {
     // Load GIF paths
+    // 使用 milkdragon.gif (預設面向左)
+    string path = "./assets/gif/Hero/calculus.jpg";
 	for(int i=0; i<static_cast<int>(BossDirection::BossDirection_MAX); i++)
 	{
-		gifPath[static_cast<BossDirection>(i)] = string(BossSetting::character_imgs_root_path) + string(BossSetting::dir_path_postfix[i]) + ".gif";
+		gifPath[static_cast<BossDirection>(i)] = path;
 	}
-	GIFCenter *GC = GIFCenter::get_instance();
-	ALGIF_ANIMATION *gif = GC->get(gifPath[dir]);
+	ImageCenter *IC = ImageCenter::get_instance();
+	ALLEGRO_BITMAP *img = IC->get(gifPath[dir]);
 
 	DataCenter *DC = DataCenter::get_instance();
 	int wh = DC->window_height;
 	int ww = DC->window_width;
     
-	w = gif->width;
-	h = gif->height;
+	w = al_get_bitmap_width(img);
+	h = al_get_bitmap_height(img);
     
     // Initial position (e.g., right side of screen)
 	shape.reset(new Rectangle{
@@ -131,10 +133,16 @@ void Boss::draw()
 {
     if(!is_active) return;
 
-	GIFCenter *GC = GIFCenter::get_instance();
-	ALGIF_ANIMATION *gif = GC->get(gifPath[dir]);
+	ImageCenter *IC = ImageCenter::get_instance();
+	ALLEGRO_BITMAP *img = IC->get(gifPath[dir]);
     
-    algif_draw_gif(gif, shape->center_x()-w/2, shape->center_y()-h/2, 0);
+    // GIF 原圖面向左，若 Boss 面向右則翻轉
+    int flags = 0;
+    if (dir == BossDirection::RIGHT) {
+        flags = ALLEGRO_FLIP_HORIZONTAL;
+    }
+    
+    al_draw_bitmap(img, shape->center_x()-w/2, shape->center_y()-h/2, flags);
     
     // Draw black overlay (Shadow effect)
     al_set_blender(ALLEGRO_ADD, ALLEGRO_ALPHA, ALLEGRO_INVERSE_ALPHA);

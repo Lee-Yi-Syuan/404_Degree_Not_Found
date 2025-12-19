@@ -29,45 +29,68 @@ namespace CharacterSetting {
 
 void THero::init()
 {
-    // 1. 載入兩張輪播圖片
-    move_img1 = al_load_bitmap("./assets/image/player1.png");
-    move_img2 = al_load_bitmap("./assets/image/player2.png");
+    // 1. 載入 GIF
+    GIFCenter *GC = GIFCenter::get_instance();
+    const char* gif_path = "./assets/image/Tcharacter.gif";
+    
+    // Debug: Check if file exists
+    ALLEGRO_FILE* f = al_fopen(gif_path, "rb");
+    if (!f) {
+        std::cerr << "[ERROR] THero::init - Cannot open GIF file: " << gif_path << std::endl;
+        gif_status = nullptr;
+    } else {
+        al_fclose(f);
+        // Try to load it safely
+        try {
+            gif_status = GC->get(gif_path);
+        } catch (...) {
+            std::cerr << "[ERROR] THero::init - Exception during GIF loading." << std::endl;
+            gif_status = nullptr;
+        }
+    }
 
     // 2. 獲取數據中心實例
     DataCenter *DC = DataCenter::get_instance();
     int wh = DC->window_height;
     int ww = DC->window_width;
 
-    // 3. 設定角色邏輯寬高 (放大兩倍版)
-    w = 100.0f; 
-    h = 100.0f; 
+    // 3. 設定角色邏輯寬高
+    if (gif_status) {
+        w = gif_status->width;
+        h = gif_status->height;
+    } else {
+        w = 50.0f;
+        h = 100.0f;
+        std::cerr << "Table Hero Error: Player GIF not found!" << std::endl;
+    }
 
-    // 4. 設定角色碰撞箱 (置中)
+    // 4. 設定角色碰撞箱 (配合進場動畫，初始位置設在左側)
+    double start_cx = -50.0;
+    double start_cy = wh - 120.0;
+
+    // 移除 -20 的硬編碼偏移，讓碰撞箱與 GIF 尺寸一致
     shape.reset(new Rectangle{
-        ww / 2.0 - w / 2.0, wh / 2.0 - h / 2.0,
-        ww / 2.0 + w / 2.0, wh / 2.0 + h / 2.0});
+        start_cx - w / 2.0, start_cy - h / 2.0,
+        start_cx + w / 2.0, start_cy + h / 2.0});
     
     // 5. 初始化所有原本的戰鬥與計時系統
-    hp_system.init(100);
-    heal_cooldown_timer = 0;
-    dash_timer = 0;
-    dash_cooldown_timer = 0;
-    is_dashing = false;
-    invincible_timer = 0;
-    stun_timer = 0;
-    knockback_vx = 0;
-    input_locked = false;
-    animation_tick = 0;
-    face_right = true; // 預設向右
-    state = THeroState::RIGHT;
-
-    if (!move_img1) {
-        std::cerr << "Table Hero Error: Player images not found!" << std::endl;
-    }
+    hp_system.init(100);         //此處設定主角血量上限為100
+    heal_cooldown_timer = 0;    // 治療冷卻時間
+    dash_timer = 0;             // 衝刺持續時間
+    dash_cooldown_timer = 0;    // 衝刺冷卻時間
+    is_dashing = false;         // 是否正在衝刺
+    invincible_timer = 0;       // 無敵時間
+    stun_timer = 0;             // 暈眩時間
+    knockback_vx = 0;           // 擊退速度
+    input_locked = false;       // 輸入鎖定
+    animation_tick = 0;         // 動畫計時器
+    face_right = true;          // 預設向右
+    state = THeroState::RIGHT;  
 }
 
 void THero::force_move(double dx) {
-    if(dx > 0) state = THeroState::RIGHT;
+
+    if(dx > 0) state = THeroState::RIGHT;   
     else if(dx < 0) state = THeroState::LEFT;
     
     shape->update_center_x(shape->center_x() + dx);
@@ -78,15 +101,18 @@ void THero::force_move(double dx) {
 }
 
 void THero::hit(int damage, bool from_left) {
+
+    //如果正在無敵或衝刺中，則不受傷
     if(invincible_timer > 0 || is_dashing) return;
     
+    //執行扣血邏輯
     hp_system.take_damage(damage);
-    invincible_timer = 60; // 1 second invincibility
-    stun_timer = 15; // 0.25 second stun
+    invincible_timer = 60;          // 1秒受傷後無敵
+    stun_timer = 15;                // 0.25秒暈眩
     
-    // Knockback
+    // 擊退效果
     knockback_vx = from_left ? 10 : -10;
-    gravity.vy = -5; // Small hop
+    gravity.vy = -5;            // 會有微量的向上擊飛
     gravity.on_ground = false;
 }
 
@@ -266,13 +292,15 @@ void THero::draw()
     if(invincible_timer > 0 && (invincible_timer / 5) % 2 == 0) {
         // 不繪製
     } else {
-        // 繪製角色圖片輪播
-        ALLEGRO_BITMAP* current_img = (animation_tick < 20) ? move_img1 : move_img2;
-        if (current_img) {
-            int flags = face_right ? ALLEGRO_FLIP_HORIZONTAL : 0;
-            al_draw_scaled_bitmap(current_img,
-                0, 0, al_get_bitmap_width(current_img), al_get_bitmap_height(current_img),
-                cx - w/2, cy - h/2, w, h, flags);
+        // 繪製角色 GIF
+        if (gif_status) {
+            ALLEGRO_BITMAP* current_img = algif_get_bitmap(gif_status, al_get_time());
+            if (current_img) {
+                int flags = face_right ? ALLEGRO_FLIP_HORIZONTAL : 0;
+                al_draw_scaled_bitmap(current_img,
+                    0, 0, al_get_bitmap_width(current_img), al_get_bitmap_height(current_img),
+                    cx - w/2, cy - h/2, w, h, flags);
+            }
         } else {
             // 備援藍色方塊
             al_draw_filled_rectangle(cx - w/2, cy - h/2, cx + w/2, cy + h/2, al_map_rgb(0, 0, 255));

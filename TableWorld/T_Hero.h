@@ -5,6 +5,7 @@
 #include "../shapes/Rectangle.h"
 #include "../shapes/Point.h"
 #include "Health_damage.h"
+#include "../algif5/algif.h"
 #include <vector>
 #include <queue>
 #include <map>
@@ -45,10 +46,11 @@ class THero : public Object
         int height() const { return h; }
         HeroMode get_mode() const { return current_mode; }
         bool is_immune() const { return is_dashing || invincible_timer > 0; }
-        void hit(int damage, bool from_left); // Handle damage, knockback, invincibility
+        void hit(int damage, bool from_left); // 除裡受傷的扣血、暈眩、擊退等效果
         
-        void set_input_locked(bool locked) { input_locked = locked; }
-        void force_move(double dx); // Move without input
+        void set_input_locked(bool locked) { input_locked = locked; }   // 鎖定輸入（如過場動畫時）
+        bool is_input_locked() const { return input_locked; }
+        void force_move(double dx); // 遊戲開場的自動移動動畫
         
         double drop_start_y = -1.0; // For dropping down platforms
 
@@ -70,8 +72,7 @@ class THero : public Object
         double knockback_vx = 0;
         
         // 改主角的動畫
-        ALLEGRO_BITMAP* move_img1 = nullptr;
-        ALLEGRO_BITMAP* move_img2 = nullptr; 
+        ALGIF_ANIMATION *gif_status = nullptr;
         int animation_tick = 0;              // 動畫計時器
         bool face_right = true;              // 左右翻轉狀態
 

@@ -5,6 +5,7 @@
 #include "../object/floor.h"
 #include "../data/DataCenter.h"
 #include "../data/ImageCenter.h"
+#include "../data/GIFCenter.h"
 #include "../shapes/Point.h"
 #include "../shapes/Rectangle.h"
 #include "../Utils.h"
@@ -21,18 +22,35 @@ void Character::init()
     state = CharacterState::Front;
     movable = true;
 
-    // 載入兩張走路圖片
-    move_img1 = al_load_bitmap("./assets/image/player1.png");
-    move_img2 = al_load_bitmap("./assets/image/player2.png");
+    // 載入 GIF
+    GIFCenter *GC = GIFCenter::get_instance();
+    const char* gif_path = "./assets/image/Tcharacter.gif";
+    
+    // Debug: Check if file exists
+    ALLEGRO_FILE* f = al_fopen(gif_path, "rb");
+    if (!f) {
+        std::cerr << "[ERROR] Character::init - Cannot open GIF file: " << gif_path << std::endl;
+        gif_status = nullptr;
+    } else {
+        al_fclose(f);
+        try {
+            gif_status = GC->get(gif_path);
+        } catch (...) {
+            std::cerr << "[ERROR] Character::init - Exception during GIF loading." << std::endl;
+            gif_status = nullptr;
+        }
+    }
 
     DataCenter *DC = DataCenter::get_instance();
     
     // --- 調整重點：將邏輯寬高放大兩倍 (50 -> 100) ---
-    w = 100.0f; 
-    h = 100.0f; 
-
-    if (!move_img1) {
-        std::cerr << "Error: Player images not found! Drawing blocks instead." << std::endl;
+    if (gif_status) {
+        w = gif_status->width;
+        h = gif_status->height;
+    } else {
+        w = 100.0f; 
+        h = 100.0f; 
+        std::cerr << "Error: Player GIF not found! Drawing blocks instead." << std::endl;
     }
 
     // 設定初始位置 (置中)
@@ -102,13 +120,15 @@ void Character::draw()
     float top = cy - h/2;
 
     // 繪製角色本體
-    ALLEGRO_BITMAP* current_img = (animation_tick < 20) ? move_img1 : move_img2;
-    if (current_img) {
-        int flags = face_right ? ALLEGRO_FLIP_HORIZONTAL : 0;
-        // 使用放大後的 w, h (100x100) 進行繪製
-        al_draw_scaled_bitmap(current_img,
-            0, 0, al_get_bitmap_width(current_img), al_get_bitmap_height(current_img),
-            cx - w/2, cy - h/2, w, h, flags);
+    if (gif_status) {
+        ALLEGRO_BITMAP* current_img = algif_get_bitmap(gif_status, al_get_time());
+        if (current_img) {
+            int flags = face_right ? ALLEGRO_FLIP_HORIZONTAL : 0;
+            // 使用放大後的 w, h (100x100) 進行繪製
+            al_draw_scaled_bitmap(current_img,
+                0, 0, al_get_bitmap_width(current_img), al_get_bitmap_height(current_img),
+                cx - w/2, cy - h/2, w, h, flags);
+        }
     } else {
         // 備援藍色方塊也同步放大
         al_draw_filled_rectangle(cx - w/2, cy - h/2, cx + w/2, cy + h/2, al_map_rgb(0, 0, 255));

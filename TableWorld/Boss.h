@@ -52,6 +52,7 @@ class Boss : public Object
         void set_active(bool active) { is_active = active; }
         bool get_active() const { return is_active; }
         void spawn(); // Activate with effect
+        BossDirection get_dir() const { return dir; }
         
 	private:
         bool is_active = false;

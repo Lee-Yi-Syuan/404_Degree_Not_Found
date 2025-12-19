@@ -1,5 +1,6 @@
 #include "B_Nor_attack.h"
 #include "../../data/DataCenter.h"
+#include "../Boss.h"
 #include <allegro5/allegro_primitives.h>
 #include <cmath>
 
@@ -27,6 +28,7 @@ void BNorAttack::init(double x, double y, double target_x, double target_y) {
 void BNorAttack::update() {
     if(!alive) return;
     
+    // Move projectile
     shape->update_center_x(shape->center_x() + vx);
     shape->update_center_y(shape->center_y() + vy);
     
@@ -35,8 +37,8 @@ void BNorAttack::update() {
         alive = false;
     }
     
-    // Boundary check
     DataCenter *DC = DataCenter::get_instance();
+    // Boundary check
     if(shape->center_x() < 0 || shape->center_x() > DC->window_width ||
        shape->center_y() < 0 || shape->center_y() > DC->window_height) {
         alive = false;

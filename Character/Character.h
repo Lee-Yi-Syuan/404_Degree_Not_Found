@@ -5,6 +5,7 @@
 #include "../Object.h"
 #include "../shapes/Rectangle.h"
 #include "../shapes/Point.h"
+#include "../algif5/algif.h"
 #include <allegro5/allegro.h>         
 #include <allegro5/allegro_image.h>  
 #include <vector>
@@ -54,8 +55,7 @@ class Character : public Object
 
 		//我這邊有改一下主角的長相
 		private:
-			ALLEGRO_BITMAP* move_img1 = nullptr;
-			ALLEGRO_BITMAP* move_img2 = nullptr;
+			ALGIF_ANIMATION* gif_status = nullptr;
 			int animation_tick = 0;      // 用於計時
 			bool face_right = true;      // 記錄水平翻轉狀態
 };

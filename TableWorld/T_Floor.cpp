@@ -94,8 +94,11 @@ void TFloor::interact()
     // 1. Map Boundaries (Left/Right)
     if (chara_x < 0)
     {
-        rect->update_center_x(rect->center_x() - chara_x);
-        chara_x = 0;
+        // 如果角色處於鎖定狀態（例如進場動畫），允許在左邊界外
+        if (!thero->is_input_locked()) {
+            rect->update_center_x(rect->center_x() - chara_x);
+            chara_x = 0;
+        }
     }
     else if (chara_x + chara_w > WIDTH)
     {
