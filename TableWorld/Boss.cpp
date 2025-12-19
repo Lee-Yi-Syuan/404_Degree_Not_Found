@@ -57,7 +57,7 @@ void Boss::init()
 
 void Boss::spawn() {
     is_active = true;
-    spawn_effect_timer = 60; // 1 second effect
+    spawn_effect_timer = 60; // 出場特效持續1秒
     state = BossState::IDLE;
     // Reset position if needed, or keep init position
 }
