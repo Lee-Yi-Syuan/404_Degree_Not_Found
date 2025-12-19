@@ -21,6 +21,8 @@
 #include <allegro5/allegro_ttf.h>
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_acodec.h>
+#include <allegro5/allegro_audio.h>
+
 #include <algorithm> // 新加的，因為有用到max
 #include <vector>
 #include <cstring>
@@ -29,7 +31,7 @@
 constexpr char game_icon_img_path[] = "./assets/image/game_icon.png";
 constexpr char game_start_sound_path[] = "./assets/sound/growl.wav";
 constexpr char background_img_path[] = "./assets/image/background.png";
-constexpr char background_sound_path[] = "./assets/sound/The%20Untitled.mp3";
+constexpr char background_sound_path[] = "./assets/sound/The%20Untitled.mp3"; //音樂來自udio.ai
 
 /**
  * @brief Game entry.
@@ -189,6 +191,40 @@ Game::game_init() {
  * @see Game::STATE
  */
 
+
+
+//換bgm的地方
+void Game::change_bgm(const char* path) {
+    // 1. 停止並清理舊的音樂實體
+    if(current_bgm_instance) {
+        al_stop_sample_instance(current_bgm_instance);
+        al_detach_sample_instance(current_bgm_instance);
+        al_destroy_sample_instance(current_bgm_instance);
+        current_bgm_instance = nullptr;
+    }
+    // 2. 釋放舊的音訊資料
+    if(current_bgm_sample) {
+        al_destroy_sample(current_bgm_sample);
+        current_bgm_sample = nullptr;
+    }
+
+    // 3. 載入新的音訊檔案
+    current_bgm_sample = al_load_sample(path);
+    if(!current_bgm_sample) {
+        debug_log("Failed to load BGM: %s\n", path);
+        return;
+    }
+
+    // 4. 建立播放實體並播放
+    current_bgm_instance = al_create_sample_instance(current_bgm_sample);
+    if(current_bgm_instance) {
+        al_set_sample_instance_playmode(current_bgm_instance, ALLEGRO_PLAYMODE_LOOP);
+        al_attach_sample_instance_to_mixer(current_bgm_instance, al_get_default_mixer());
+        al_play_sample_instance(current_bgm_instance);
+    }
+}
+
+
 bool
 Game::game_update() {
     DataCenter *DC = DataCenter::get_instance();
@@ -203,15 +239,15 @@ Game::game_update() {
             if(start_screen->isStarted()) {
                 debug_log("<Game> state: change to Main\n");
                 state = STATE::Main;
+                change_bgm(background_sound_path);
                 DC->bed->reset_bed_world();
                 DC->closet->reset_closet_world();
             }
             break;
         } case STATE::Main: {
-            static bool BGM_played = false;
-            if(!BGM_played) {
-                background = SC->play(background_sound_path, ALLEGRO_PLAYMODE_LOOP);
-                BGM_played = true;
+            if(start_screen && start_screen->isStarted()) {
+                state = STATE::Main;
+                
             }
 
             if(DC->key_state[ALLEGRO_KEY_P] && !DC->prev_key_state[ALLEGRO_KEY_P]) {
@@ -316,7 +352,9 @@ Game::game_update() {
 
             if(DC->table->table_world())
             {
+                //這邊換音樂喔
                 state= STATE::Table_world;
+                change_bgm("./assets/sound/tablebgm.mp3");
                 table_world_screen->start_level();
                 debug_log("<Game> state: change to Table_world\n");
             }
@@ -324,12 +362,14 @@ Game::game_update() {
             {
                 // 點擊門口時，進入 DoorWorld
                 state = STATE::Door_world;
+                change_bgm("./assets/sound/tablebgm.mp3");
                 door_world_screen->start_level();
                 debug_log("<Game> state: change to Door_world\n");
             }
             break;   
         } case STATE::Table_world: {
             //進入桌子遊戲
+            
             TFloor* tfloor=DC->tfloor;
             // int type=table_world_screen->get_current_TWorld_type();
             // tfloor->load_map(type); // Moved to start_level()
@@ -341,6 +381,7 @@ Game::game_update() {
                 DC->table->reset_table_world();
                 debug_log("<Game> state: change to Main\n");
                 state = STATE::Main;
+                change_bgm(background_sound_path);
                 
                 if (win) {
                     // Add Study credits
@@ -379,6 +420,7 @@ Game::game_update() {
                 DC->door->reset_door_world(); // Assuming this exists or needs to be added
                 debug_log("<Game> state: change to Main\n");
                 state = STATE::Main;
+                change_bgm(background_sound_path);
 
                 if (win) {
                     // Add Club credits
