@@ -25,6 +25,13 @@ void Character::init()
     // 載入 GIF
     GIFCenter *GC = GIFCenter::get_instance();
     const char* gif_path = "./assets/image/Tcharacter.gif";
+
+    ImageCenter *IC = ImageCenter::get_instance();
+    hat_img = IC->get("./assets/image/hat.png");
+    glasses_img = IC->get("./assets/image/glasses.png");
+    wind_img = IC->get("./assets/image/wind.png");
+
+    
     
     // Debug: Check if file exists
     ALLEGRO_FILE* f = al_fopen(gif_path, "rb");
@@ -117,37 +124,39 @@ void Character::draw()
 {
     float cx = shape->center_x();
     float cy = shape->center_y();
+    float draw_x = cx - w/2;
+    float draw_y = cy - h/2;
     float top = cy - h/2;
 
+    int flags = face_right ? ALLEGRO_FLIP_HORIZONTAL : 0;
+
     // 繪製角色本體
-    if (gif_status) {
+if (gif_status) {
         ALLEGRO_BITMAP* current_img = algif_get_bitmap(gif_status, al_get_time());
         if (current_img) {
-            int flags = face_right ? ALLEGRO_FLIP_HORIZONTAL : 0;
-            // 使用放大後的 w, h (100x100) 進行繪製
             al_draw_scaled_bitmap(current_img,
                 0, 0, al_get_bitmap_width(current_img), al_get_bitmap_height(current_img),
-                cx - w/2, cy - h/2, w, h, flags);
+                draw_x, draw_y, w, h, flags);
         }
     } else {
-        // 備援藍色方塊也同步放大
-        al_draw_filled_rectangle(cx - w/2, cy - h/2, cx + w/2, cy + h/2, al_map_rgb(0, 0, 255));
+        al_draw_filled_rectangle(draw_x, draw_y, draw_x + w, draw_y + h, al_map_rgb(0, 0, 255));
     }
 
     // --- 裝備繪製參數調整 (配合 100x100 尺寸) ---
-    if (has_hat) {
-        // 加大帽子底邊與高度
-        al_draw_filled_triangle(cx - 25, top + 10, cx + 25, top + 10, cx, top - 25, al_map_rgb(255, 0, 0));
-    }
     if (has_clothes) {
-        // 加大衣服寬度與覆蓋高度
-        al_draw_filled_rectangle(cx - 25, top + 35, cx + 25, top + 85, al_map_rgb(0, 0, 255));
-    }
+        al_draw_scaled_bitmap(wind_img,
+            0, 0, al_get_bitmap_width(wind_img), al_get_bitmap_height(wind_img),
+            draw_x, draw_y, w, h, flags);}
+
     if (has_sunglasses) {
-        float eye_y = top + 25; // 調整眼睛位置高度
-        al_draw_filled_circle(cx - 10, eye_y, 6, al_map_rgb(0, 0, 0)); // 加大鏡片
-        al_draw_filled_circle(cx + 10, eye_y, 6, al_map_rgb(0, 0, 0));
-        al_draw_line(cx - 10, eye_y, cx + 10, eye_y, al_map_rgb(0, 0, 0), 3); // 加粗連線
+        al_draw_scaled_bitmap(glasses_img,
+            0, 0, al_get_bitmap_width(glasses_img), al_get_bitmap_height(glasses_img),
+            draw_x, draw_y, w, h, flags);
+    }
+    if (has_hat) {
+        al_draw_scaled_bitmap(hat_img,
+            0, 0, al_get_bitmap_width(hat_img), al_get_bitmap_height(hat_img),
+            draw_x, draw_y, w, h, flags);
     }
 }
 

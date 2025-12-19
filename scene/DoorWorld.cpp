@@ -92,6 +92,7 @@ bool DWorld::check_collision(const Rectangle& r1, const Rectangle& r2) {
     return r1.overlap(r2);
 }
 
+//做碰撞檢查跟勝負判定
 void DWorld::update() {
     DataCenter *DC = DataCenter::get_instance();
     
@@ -142,6 +143,8 @@ void DWorld::update() {
     }
 }
 
+
+//字的部分
 void DWorld::draw_ui() {
     DataCenter *DC = DataCenter::get_instance();
     FontCenter *FC = FontCenter::get_instance();
@@ -177,7 +180,7 @@ void DWorld::draw() {
     DataCenter *DC = DataCenter::get_instance();
     FontCenter *FC = FontCenter::get_instance();
 
-    // 1. 背景
+    // 背景
     if (background) {
         al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
                               0, 0, DC->window_width, DC->window_height, 0);
@@ -185,7 +188,7 @@ void DWorld::draw() {
         al_clear_to_color(al_map_rgb(249, 244, 236));
     }
 
-    // 2. 道具 (視覺 1.5 倍)
+    // 道具
     for (auto &item : items) {
         if (item.active) {
             if (award_img) {
@@ -197,7 +200,7 @@ void DWorld::draw() {
         }
     }
 
-    // 3. 敵人 (視覺 1.5 倍)
+    //敵人
     for (auto e : enemies) {
         if (enemy_img && e->shape) {
             Rectangle* er = e->shape.get();
@@ -211,7 +214,7 @@ void DWorld::draw() {
         }
     }
 
-    // 4. 英雄 (視覺 1.5 倍 + 水平翻轉)
+    // 英雄
     if (dhero.shape) {
         Rectangle* r = dhero.shape.get();
         ALLEGRO_BITMAP* current_frame = (animation_tick < 20) ? player_img1 : player_img2;
@@ -235,5 +238,7 @@ void DWorld::draw() {
         const char* msg = (state == DWorldState::WIN) ? "You lived a wonderful day:)" : "I should have stayed home...";
         al_draw_text(FC->caviar_dreams[FontSize::LARGE], al_map_rgb(255, 255, 255), 
                      DC->window_width/2, DC->window_height/2 - 50, ALLEGRO_ALIGN_CENTER, msg);
+        al_draw_text(FC->caviar_dreams[FontSize::LARGE], al_map_rgb(255, 255, 255), 
+                     DC->window_width/2, DC->window_height/2 + 50, ALLEGRO_ALIGN_CENTER, "Press Space to Return");
     }
 }

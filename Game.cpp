@@ -370,7 +370,7 @@ Game::game_update() {
             {
                 // 點擊門口時，進入 DoorWorld
                 state = STATE::Door_world;
-                change_bgm("./assets/sound/tablebgm.mp3");
+                change_bgm("./assets/sound/doorworld.mp3");
                 door_world_screen->start_level();
                 debug_log("<Game> state: change to Door_world\n");
             }
