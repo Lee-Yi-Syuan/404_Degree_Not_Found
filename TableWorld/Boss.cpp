@@ -38,10 +38,10 @@ void Boss::init()
 	h = al_get_bitmap_height(img);
     
     // 初始化位置在畫面右半邊中央
+    // 使用圖片大小來計算置中位置
 	shape.reset(new Rectangle{
-		ww - 200.0, wh / 2.0,
-		ww - 200.0 + w,
-		wh / 2.0 + h
+		ww * 0.75 - w / 2.0, wh / 2.0 - h / 2.0,
+		ww * 0.75 + w / 2.0, wh / 2.0 + h / 2.0
     });
     
     // 初始狀態
