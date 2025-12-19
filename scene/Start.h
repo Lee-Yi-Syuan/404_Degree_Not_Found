@@ -25,6 +25,9 @@ class StartScreen
         bool start_pressed;
          StartState state=StartState::Normal;
         std::map<StartState,std::string> imgPath;
+        
+        int sub_state;           // 用來記錄目前的劇情階段
+        std::string storyPath[2];
 };
 
 
