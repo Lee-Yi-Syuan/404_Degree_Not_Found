@@ -6,7 +6,7 @@
 #include "data/ImageCenter.h"
 #include "data/FontCenter.h"
 #include "Player.h"
-#include "character/Character.h"
+#include "Character/Character.h"
 #include "object/bed.h"
 #include "object/candle.h"
 #include "object/closet.h"
@@ -311,7 +311,15 @@ Game::game_update() {
                         if(DC->bed->bed_world())
             {
                 // 隨機選擇要增加的學分
+                Character* character = DC->character;
                 int credit_type = rand() % 3; // 0, 1, or 2
+                if(character->is_equipped(EquippedItem::Hat)) {
+                    credit_type = 0; // 戴帽子增加戀愛學分
+                } else if(character->is_equipped(EquippedItem::Clothes)) {
+                    credit_type = 1; // 穿衣服增加課業學分
+                } else if(character->is_equipped(EquippedItem::Sunglasses)) {
+                    credit_type = 2; // 戴墨鏡增加社團學分
+                }
                 int gained = 20;
                 std::string type_str;
 

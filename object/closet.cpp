@@ -123,6 +123,7 @@ void Closet::interact(bool enabled) {
             DC->character->set_movability(true);
         }
         
+        //TODO
         if (DC->key_state[ALLEGRO_KEY_1] && !DC->prev_key_state[ALLEGRO_KEY_1]) {
             DC->character->toggle_equipped_item(EquippedItem::Hat);
         }
