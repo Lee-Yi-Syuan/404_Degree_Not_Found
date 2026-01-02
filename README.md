@@ -10,3 +10,7 @@
 - Allegro install(Mac OS): [https://hackmd.io/@Jiza/BkZ5a5yL2](https://hackmd.io/@Jiza/BkZ5a5yL2)
 - Allegro documentation: [https://liballeg.org/a5docs/trunk/](https://liballeg.org/a5docs/trunk/)
 - GIF convert: [https://ezgif.com/video-to-gif](https://ezgif.com/video-to-gif)
+
+# Game Intro
+- This is a game about "graduation".
+- To get different kinds of credits to graduate and reach diffierent ends.
